@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/fitrinovs/achievement_system/helper"
+	"github.com/fitrinovs/achievement_system/app/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,14 +11,14 @@ func RequirePermission(permission string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		permissions, exists := c.Get("permissions")
 		if !exists {
-			helper.ErrorResponse(c, 403, "No permissions found", nil)
+			utils.ErrorResponse(c, 403, "No permissions found", nil)
 			c.Abort()
 			return
 		}
 
 		permissionList, ok := permissions.([]string)
 		if !ok {
-			helper.ErrorResponse(c, 403, "Invalid permissions format", nil)
+			utils.ErrorResponse(c, 403, "Invalid permissions format", nil)
 			c.Abort()
 			return
 		}
@@ -33,7 +33,7 @@ func RequirePermission(permission string) gin.HandlerFunc {
 		}
 
 		if !hasPermission {
-			helper.ErrorResponse(c, 403, "Insufficient permissions", map[string]string{
+			utils.ErrorResponse(c, 403, "Insufficient permissions", map[string]string{
 				"required": permission,
 			})
 			c.Abort()
@@ -49,14 +49,14 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("role")
 		if !exists {
-			helper.ErrorResponse(c, 403, "No role found", nil)
+			utils.ErrorResponse(c, 403, "No role found", nil)
 			c.Abort()
 			return
 		}
 
 		role, ok := userRole.(string)
 		if !ok {
-			helper.ErrorResponse(c, 403, "Invalid role format", nil)
+			utils.ErrorResponse(c, 403, "Invalid role format", nil)
 			c.Abort()
 			return
 		}
@@ -71,7 +71,7 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 		}
 
 		if !hasRole {
-			helper.ErrorResponse(c, 403, "Insufficient role privileges", map[string]interface{}{
+			utils.ErrorResponse(c, 403, "Insufficient role privileges", map[string]interface{}{
 				"required": roles,
 				"current":  role,
 			})

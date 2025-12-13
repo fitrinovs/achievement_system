@@ -1,4 +1,4 @@
-package helper
+package utils
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Struktur Response Standar
 type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
