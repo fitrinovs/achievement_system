@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// swaggerignore:true
 type UserRepository interface {
 	FindByUsername(username string) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
@@ -21,6 +22,7 @@ type UserRepository interface {
 }
 
 // GORM Implementation
+// swaggerignore:true
 type userRepositoryGORM struct {
 	db *gorm.DB
 }
@@ -114,8 +116,6 @@ func (r *userRepositoryGORM) GetUserPermissions(userID uuid.UUID) ([]string, err
 
 	return permissions, nil
 }
-
-// ============ SQL IMPLEMENTATION ============
 
 func (r *UserRepositorySQL) FindByUsername(username string) (*model.User, error) {
 	query := `

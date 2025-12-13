@@ -11,12 +11,12 @@ import (
 	"github.com/fitrinovs/achievement_system/config"
 	"github.com/fitrinovs/achievement_system/database"
 	"github.com/fitrinovs/achievement_system/middleware"
-	"github.com/fitrinovs/achievement_system/route" // Pastikan import ini sesuai nama folder Anda
+	"github.com/fitrinovs/achievement_system/route"
 
 	_ "github.com/fitrinovs/achievement_system/docs"
 
-	// swaggerFiles "github.com/swaggo/files"  <-- Bisa dikomentari jika tidak dipakai di main
-	// ginSwagger "github.com/swaggo/gin-swagger" <-- Bisa dikomentari jika tidak dipakai di main
+	// "github.com/swaggo/files"       <-- Komentari agar tidak error unused
+	// "github.com/swaggo/gin-swagger" <-- Komentari agar tidak error unused
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,6 +69,7 @@ func main() {
 		&model.User{},
 		&model.Lecturer{},
 		&model.Student{},
+		&model.Achievement{}, // <--- PENTING: Pastikan tabel achievement dibuat
 	)
 	logger.Info("✅ Database migration completed!")
 
@@ -76,6 +77,10 @@ func main() {
 	uploadPath := cfg.Upload.Path
 	if err := os.MkdirAll(uploadPath, 0755); err != nil {
 		log.Fatal("❌ Failed to create uploads directory:", err)
+	}
+	// Buat subfolder achievement
+	if err := os.MkdirAll(uploadPath+"/achievements", 0755); err != nil {
+		log.Fatal("❌ Failed to create uploads/achievements directory:", err)
 	}
 
 	// ========================================================
@@ -86,15 +91,15 @@ func main() {
 	userRepo := repository.NewUserRepository(database.DB)
 	lecturerRepo := repository.NewLecturerRepository(database.DB)
 	studentRepo := repository.NewStudentRepository(database.DB)
+	achievementRepo := repository.NewAchievementRepository(database.DB) // <--- (1) INIT REPO
 
 	// B. Services
 	authService := service.NewAuthService(userRepo)
-
-	// StudentService (Butuh StudentRepo, UserRepo, LecturerRepo)
 	studentService := service.NewStudentService(studentRepo, userRepo, lecturerRepo)
-
-	// LecturerService (Butuh LecturerRepo, UserRepo)
 	lecturerService := service.NewLecturerService(lecturerRepo, userRepo)
+
+	// <--- (2) INIT SERVICE
+	achievementService := service.NewAchievementService(achievementRepo, studentRepo, lecturerRepo)
 
 	// ========================================================
 	// 8. SETUP GIN SERVER
@@ -124,12 +129,6 @@ func main() {
 	// Health check
 	router.GET("/health", healthCheckHandler)
 
-	// ============================================================
-	// PERBAIKAN: KOMENTARI ROUTE INI AGAR TIDAK KONFLIK / PANIC
-	// Route swagger sudah didaftarkan di dalam route.SetupRoutes()
-	// ============================================================
-	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	// Root Route
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -142,8 +141,9 @@ func main() {
 	// ========================================================
 	// 9. SETUP ROUTES
 	// ========================================================
-	// Swagger akan di-load di sini
-	route.SetupRoutes(router, authService, studentService, lecturerService)
+
+	// <--- (3) MASUKKAN achievementService KE SINI (Parameter Terakhir)
+	route.SetupRoutes(router, authService, studentService, lecturerService, achievementService)
 
 	// Serve static files
 	router.Static("/uploads", uploadPath)

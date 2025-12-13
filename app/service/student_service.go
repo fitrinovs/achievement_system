@@ -64,10 +64,11 @@ func (s *studentService) CreateStudent(c *gin.Context) {
 		return
 	}
 
-	// 2. Cek Duplicate Student ID (NIM)
-	existing, _ := s.studentRepo.FindByStudentID(req.StudentID)
+	// 2. Cek Duplicate NIM (Sebelumnya StudentID)
+	// PERBAIKAN: Gunakan FindByNIM dan req.NIM
+	existing, _ := s.studentRepo.FindByNIM(req.NIM)
 	if existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "student_id (NIM) already registered"})
+		c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "NIM already registered"})
 		return
 	}
 
@@ -89,8 +90,9 @@ func (s *studentService) CreateStudent(c *gin.Context) {
 	}
 
 	student := &model.Student{
-		UserID:       userUUID,
-		StudentID:    req.StudentID,
+		UserID: userUUID,
+		// PERBAIKAN: Gunakan NIM
+		NIM:          req.NIM,
 		ProgramStudy: req.ProgramStudy,
 		AcademicYear: req.AcademicYear,
 		AdvisorID:    advisorUUID,

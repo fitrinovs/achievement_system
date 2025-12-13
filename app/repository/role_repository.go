@@ -21,8 +21,6 @@ type RoleRepository interface {
 	GetRolePermissions(roleID uuid.UUID) ([]model.Permission, error)
 }
 
-// ============ GORM IMPLEMENTATION ============
-
 type roleRepositoryGORM struct {
 	db *gorm.DB
 }
@@ -106,8 +104,6 @@ func (r *roleRepositoryGORM) GetRolePermissions(roleID uuid.UUID) ([]model.Permi
 
 	return permissions, err
 }
-
-// ============ SQL IMPLEMENTATION ============
 
 type RoleRepositorySQL struct {
 	DB *sql.DB
@@ -240,14 +236,10 @@ func (r *RoleRepositorySQL) AssignPermissions(roleID uuid.UUID, permissionIDs []
 		return err
 	}
 	defer tx.Rollback()
-
-	// Delete existing permissions
 	_, err = tx.Exec("DELETE FROM role_permissions WHERE role_id = $1", roleID)
 	if err != nil {
 		return err
 	}
-
-	// Insert new permissions
 	stmt, err := tx.Prepare("INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2)")
 	if err != nil {
 		return err

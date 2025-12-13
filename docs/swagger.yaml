@@ -1,5 +1,66 @@
 basePath: /api/v1
 definitions:
+  model.Achievement:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      file_proof:
+        type: string
+      id:
+        type: string
+      level:
+        type: string
+      points:
+        type: integer
+      status:
+        $ref: '#/definitions/model.AchievementStatus'
+      student:
+        allOf:
+        - $ref: '#/definitions/model.Student'
+        description: |-
+          =========================================================================
+          PERBAIKAN DI SINI:
+          Tambahkan ";references:ID" agar GORM tidak salah sambung ke NIM (string)
+          =========================================================================
+      student_id:
+        description: Foreign Key ke Student
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      validator:
+        $ref: '#/definitions/model.Lecturer'
+      validator_id:
+        type: string
+    type: object
+  model.AchievementStatus:
+    enum:
+    - PENDING
+    - APPROVED
+    - REJECTED
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusApproved
+    - StatusRejected
+  model.AchievementValidateRequest:
+    properties:
+      points:
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/model.AchievementStatus'
+        enum:
+        - APPROVED
+        - REJECTED
+    required:
+    - status
+    type: object
   model.Lecturer:
     properties:
       created_at:
@@ -9,7 +70,6 @@ definitions:
       id:
         type: string
       lecturer_id:
-        description: NIP/NIDN
         type: string
       user:
         $ref: '#/definitions/model.User'
@@ -83,22 +143,47 @@ definitions:
           $ref: '#/definitions/model.Permission'
         type: array
     type: object
+  model.Student:
+    properties:
+      academic_year:
+        type: string
+      advisor:
+        $ref: '#/definitions/model.Lecturer'
+      advisor_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      nim:
+        description: Pastikan field ini bernama NIM
+        type: string
+      program_study:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      user_id:
+        type: string
+    type: object
   model.StudentCreateRequest:
     properties:
       academic_year:
         type: string
       advisor_id:
-        description: Optional
+        type: string
+      nim:
+        description: <--- GANTI INI
         type: string
       program_study:
-        type: string
-      student_id:
-        description: NIM
         type: string
       user_id:
         type: string
     required:
-    - student_id
+    - academic_year
+    - nim
+    - program_study
     - user_id
     type: object
   model.StudentUpdateRequest:
@@ -193,6 +278,225 @@ info:
   title: Student Achievement API
   version: "1.0"
 paths:
+  /api/v1/achievements:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Student uploads a new achievement with file proof
+      parameters:
+      - description: File Proof (PDF/JPG/PNG)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Achievement Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Category (e.g. Lomba, Seminar)
+        in: formData
+        name: category
+        required: true
+        type: string
+      - description: Level (Internasional, Nasional, Provinsi, Universitas)
+        in: formData
+        name: level
+        required: true
+        type: string
+      - description: Description
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/model.Achievement'
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload Achievement
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}:
+    get:
+      description: Get specific achievement by UUID
+      parameters:
+      - description: Achievement UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/model.Achievement'
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Achievement Detail
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}/validate:
+    put:
+      consumes:
+      - application/json
+      description: Lecturer approves or rejects an achievement
+      parameters:
+      - description: Achievement UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Validation Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.AchievementValidateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Validate Achievement
+      tags:
+      - Achievements
+  /api/v1/achievements/my:
+    get:
+      description: Get all achievements uploaded by logged-in student
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                items:
+                  $ref: '#/definitions/model.Achievement'
+                type: array
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get My Achievements
+      tags:
+      - Achievements
   /api/v1/auth/login:
     post:
       consumes:

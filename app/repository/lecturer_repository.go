@@ -25,7 +25,6 @@ func NewLecturerRepository(db *gorm.DB) LecturerRepository {
 
 func (r *lecturerRepositoryGORM) FindByID(id uuid.UUID) (*model.Lecturer, error) {
 	var lecturer model.Lecturer
-	// Preload User agar data profil dosen lengkap
 	err := r.db.Preload("User").First(&lecturer, "id = ?", id).Error
 	if err != nil {
 		return nil, err

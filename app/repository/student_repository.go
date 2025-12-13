@@ -10,19 +10,21 @@ import (
 	"gorm.io/gorm"
 )
 
+// swaggerignore:true
 type StudentRepository interface {
 	FindAll() ([]model.Student, error)
 	FindByID(id uuid.UUID) (*model.Student, error)
 	FindByUserID(userID uuid.UUID) (*model.Student, error)
-	FindByStudentID(studentID string) (*model.Student, error)
+
+	// PERUBAHAN 1: Ganti nama method biar jelas
+	FindByNIM(nim string) (*model.Student, error)
+
 	FindByAdvisorID(advisorID uuid.UUID) ([]model.Student, error)
 	Create(student *model.Student) error
 	Update(student *model.Student) error
 	Delete(id uuid.UUID) error
 	AssignAdvisor(studentID, advisorID uuid.UUID) error
 }
-
-// ============ GORM IMPLEMENTATION ============
 
 type studentRepositoryGORM struct {
 	db *gorm.DB
@@ -64,9 +66,11 @@ func (r *studentRepositoryGORM) FindByUserID(userID uuid.UUID) (*model.Student, 
 	return &student, nil
 }
 
-func (r *studentRepositoryGORM) FindByStudentID(studentID string) (*model.Student, error) {
+// PERUBAHAN 2: Implementasi GORM untuk NIM
+func (r *studentRepositoryGORM) FindByNIM(nim string) (*model.Student, error) {
 	var student model.Student
-	err := r.db.Preload("User").Preload("Advisor.User").Where("student_id = ?", studentID).First(&student).Error
+	// Di Database kolomnya tetap "student_id", tapi parameternya "nim"
+	err := r.db.Preload("User").Preload("Advisor.User").Where("student_id = ?", nim).First(&student).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -113,10 +117,10 @@ func NewStudentRepositorySQL(db *sql.DB) StudentRepository {
 
 func (r *StudentRepositorySQL) FindAll() ([]model.Student, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
-		FROM students
-		ORDER BY student_id
-	`
+        SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+        FROM students
+        ORDER BY student_id
+    `
 
 	rows, err := r.DB.Query(query)
 	if err != nil {
@@ -129,8 +133,9 @@ func (r *StudentRepositorySQL) FindAll() ([]model.Student, error) {
 		var student model.Student
 		var advisorID sql.NullString
 
+		// PERUBAHAN 3: Scan ke &student.NIM
 		err := rows.Scan(
-			&student.ID, &student.UserID, &student.StudentID,
+			&student.ID, &student.UserID, &student.NIM,
 			&student.ProgramStudy, &student.AcademicYear, &advisorID, &student.CreatedAt,
 		)
 		if err != nil {
@@ -150,16 +155,17 @@ func (r *StudentRepositorySQL) FindAll() ([]model.Student, error) {
 
 func (r *StudentRepositorySQL) FindByID(id uuid.UUID) (*model.Student, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
-		FROM students
-		WHERE id = $1
-	`
+        SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+        FROM students
+        WHERE id = $1
+    `
 
 	var student model.Student
 	var advisorID sql.NullString
 
+	// PERUBAHAN 4: Scan ke &student.NIM
 	err := r.DB.QueryRow(query, id).Scan(
-		&student.ID, &student.UserID, &student.StudentID,
+		&student.ID, &student.UserID, &student.NIM,
 		&student.ProgramStudy, &student.AcademicYear, &advisorID, &student.CreatedAt,
 	)
 
@@ -180,16 +186,17 @@ func (r *StudentRepositorySQL) FindByID(id uuid.UUID) (*model.Student, error) {
 
 func (r *StudentRepositorySQL) FindByUserID(userID uuid.UUID) (*model.Student, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
-		FROM students
-		WHERE user_id = $1
-	`
+        SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+        FROM students
+        WHERE user_id = $1
+    `
 
 	var student model.Student
 	var advisorID sql.NullString
 
+	// PERUBAHAN 5: Scan ke &student.NIM
 	err := r.DB.QueryRow(query, userID).Scan(
-		&student.ID, &student.UserID, &student.StudentID,
+		&student.ID, &student.UserID, &student.NIM,
 		&student.ProgramStudy, &student.AcademicYear, &advisorID, &student.CreatedAt,
 	)
 
@@ -208,18 +215,20 @@ func (r *StudentRepositorySQL) FindByUserID(userID uuid.UUID) (*model.Student, e
 	return &student, nil
 }
 
-func (r *StudentRepositorySQL) FindByStudentID(studentID string) (*model.Student, error) {
+// PERUBAHAN 6: Implementasi SQL untuk NIM
+func (r *StudentRepositorySQL) FindByNIM(nim string) (*model.Student, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
-		FROM students
-		WHERE student_id = $1
-	`
+        SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+        FROM students
+        WHERE student_id = $1
+    `
 
 	var student model.Student
 	var advisorID sql.NullString
 
-	err := r.DB.QueryRow(query, studentID).Scan(
-		&student.ID, &student.UserID, &student.StudentID,
+	// Parameternya nim, scan ke &student.NIM
+	err := r.DB.QueryRow(query, nim).Scan(
+		&student.ID, &student.UserID, &student.NIM,
 		&student.ProgramStudy, &student.AcademicYear, &advisorID, &student.CreatedAt,
 	)
 
@@ -240,11 +249,11 @@ func (r *StudentRepositorySQL) FindByStudentID(studentID string) (*model.Student
 
 func (r *StudentRepositorySQL) FindByAdvisorID(advisorID uuid.UUID) ([]model.Student, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
-		FROM students
-		WHERE advisor_id = $1
-		ORDER BY student_id
-	`
+        SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+        FROM students
+        WHERE advisor_id = $1
+        ORDER BY student_id
+    `
 
 	rows, err := r.DB.Query(query, advisorID)
 	if err != nil {
@@ -257,8 +266,9 @@ func (r *StudentRepositorySQL) FindByAdvisorID(advisorID uuid.UUID) ([]model.Stu
 		var student model.Student
 		var advID sql.NullString
 
+		// PERUBAHAN 7: Scan ke &student.NIM
 		err := rows.Scan(
-			&student.ID, &student.UserID, &student.StudentID,
+			&student.ID, &student.UserID, &student.NIM,
 			&student.ProgramStudy, &student.AcademicYear, &advID, &student.CreatedAt,
 		)
 		if err != nil {
@@ -278,18 +288,19 @@ func (r *StudentRepositorySQL) FindByAdvisorID(advisorID uuid.UUID) ([]model.Stu
 
 func (r *StudentRepositorySQL) Create(student *model.Student) error {
 	query := `
-		INSERT INTO students (id, user_id, student_id, program_study, academic_year, advisor_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING created_at
-	`
+        INSERT INTO students (id, user_id, student_id, program_study, academic_year, advisor_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING created_at
+    `
 
 	if student.ID == uuid.Nil {
 		student.ID = uuid.New()
 	}
 
+	// PERUBAHAN 8: Ambil data dari student.NIM
 	err := r.DB.QueryRow(
 		query,
-		student.ID, student.UserID, student.StudentID,
+		student.ID, student.UserID, student.NIM,
 		student.ProgramStudy, student.AcademicYear, student.AdvisorID,
 	).Scan(&student.CreatedAt)
 
@@ -298,14 +309,15 @@ func (r *StudentRepositorySQL) Create(student *model.Student) error {
 
 func (r *StudentRepositorySQL) Update(student *model.Student) error {
 	query := `
-		UPDATE students 
-		SET student_id = $1, program_study = $2, academic_year = $3, advisor_id = $4
-		WHERE id = $5
-	`
+        UPDATE students 
+        SET student_id = $1, program_study = $2, academic_year = $3, advisor_id = $4
+        WHERE id = $5
+    `
 
+	// PERUBAHAN 9: Ambil data dari student.NIM
 	result, err := r.DB.Exec(
 		query,
-		student.StudentID, student.ProgramStudy, student.AcademicYear,
+		student.NIM, student.ProgramStudy, student.AcademicYear,
 		student.AdvisorID, student.ID,
 	)
 	if err != nil {
@@ -344,6 +356,8 @@ func (r *StudentRepositorySQL) Delete(id uuid.UUID) error {
 	return nil
 }
 
+// PERUBAHAN 10: Perbaiki nama variabel parameter
+// Di sini parameter pertama adalah ID System (UUID), BUKAN NIM string
 func (r *StudentRepositorySQL) AssignAdvisor(studentID, advisorID uuid.UUID) error {
 	query := `UPDATE students SET advisor_id = $1 WHERE id = $2`
 

@@ -5,8 +5,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// JwtCustomClaims adalah struktur data yang akan disimpan di dalam payload Token (JWT).
-// Kita sesuaikan UserID menjadi uuid.UUID agar sama dengan model User.
 type JwtCustomClaims struct {
 	UserID      uuid.UUID `json:"user_id"`
 	Role        string    `json:"role"`

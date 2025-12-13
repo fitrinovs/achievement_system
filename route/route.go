@@ -14,6 +14,7 @@ func SetupRoutes(
 	authService service.AuthService,
 	studentService service.StudentService,
 	lecturerService service.LecturerService,
+	achievementService service.AchievementService,
 ) {
 	// Integrasi Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -54,4 +55,15 @@ func SetupRoutes(
 		lecturerGroup.PUT("/:id", lecturerService.UpdateLecturer)
 		lecturerGroup.DELETE("/:id", lecturerService.DeleteLecturer)
 	}
+
+	achievementGroup := protected.Group("/achievements")
+	{
+		achievementGroup.POST("", achievementService.CreateAchievement)     // Upload
+		achievementGroup.GET("/my", achievementService.GetMyAchievements)   // List Punya Sendiri
+		achievementGroup.GET("/:id", achievementService.GetAchievementByID) // Detail
+
+		// Validasi (Bisa tambahkan middleware cek role dosen jika mau lebih strict)
+		achievementGroup.PUT("/:id/validate", achievementService.ValidateAchievement)
+	}
+
 }
