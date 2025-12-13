@@ -1,0 +1,559 @@
+basePath: /api/v1
+definitions:
+  model.Lecturer:
+    properties:
+      created_at:
+        type: string
+      department:
+        type: string
+      id:
+        type: string
+      lecturer_id:
+        description: NIP/NIDN
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      user_id:
+        type: string
+    type: object
+  model.LecturerCreateRequest:
+    properties:
+      department:
+        type: string
+      lecturer_id:
+        description: NIP
+        type: string
+      user_id:
+        type: string
+    required:
+    - lecturer_id
+    - user_id
+    type: object
+  model.LecturerUpdateRequest:
+    properties:
+      department:
+        type: string
+      lecturer_id:
+        type: string
+    type: object
+  model.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  model.LoginResponse:
+    properties:
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/model.UserProfileResponse'
+    type: object
+  model.Permission:
+    properties:
+      action:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      resource:
+        type: string
+    type: object
+  model.Role:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/model.Permission'
+        type: array
+    type: object
+  model.StudentCreateRequest:
+    properties:
+      academic_year:
+        type: string
+      advisor_id:
+        description: Optional
+        type: string
+      program_study:
+        type: string
+      student_id:
+        description: NIM
+        type: string
+      user_id:
+        type: string
+    required:
+    - student_id
+    - user_id
+    type: object
+  model.StudentUpdateRequest:
+    properties:
+      academic_year:
+        type: string
+      advisor_id:
+        type: string
+      program_study:
+        type: string
+    type: object
+  model.User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      role:
+        $ref: '#/definitions/model.Role'
+      role_id:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  model.UserCreateRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      role_id:
+        description: Ubah int menjadi string agar kompatibel dengan UUID
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - role_id
+    - username
+    type: object
+  model.UserProfileResponse:
+    properties:
+      email:
+        type: string
+      fullname:
+        type: string
+      id:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  model.UserUpdateRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      role_id:
+        description: Ubah int menjadi string
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@unair.ac.id
+    name: API Support
+  description: API untuk Sistem Pelaporan Prestasi Mahasiswa
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Student Achievement API
+  version: "1.0"
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Masuk sistem untuk mendapatkan Token JWT
+      parameters:
+      - description: Username & Password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login User
+      tags:
+      - Auth
+  /api/v1/lecturers:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Lecturer'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get All Lecturers
+      tags:
+      - Lecturers
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan data dosen baru
+      parameters:
+      - description: Data Dosen
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LecturerCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Lecturer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Lecturer
+      tags:
+      - Lecturers
+  /api/v1/lecturers/{id}:
+    delete:
+      parameters:
+      - description: Lecturer ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete Lecturer
+      tags:
+      - Lecturers
+    get:
+      parameters:
+      - description: Lecturer ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Lecturer'
+      security:
+      - BearerAuth: []
+      summary: Get Lecturer by ID
+      tags:
+      - Lecturers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Lecturer ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LecturerUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Lecturer
+      tags:
+      - Lecturers
+  /api/v1/lecturers/user/{user_id}:
+    get:
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Lecturer'
+      security:
+      - BearerAuth: []
+      summary: Get Lecturer by User ID
+      tags:
+      - Lecturers
+  /api/v1/students:
+    get:
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get All Students
+      tags:
+      - Students
+    post:
+      parameters:
+      - description: Data Mahasiswa
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.StudentCreateRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Create Student
+      tags:
+      - Students
+  /api/v1/students/{id}:
+    delete:
+      parameters:
+      - description: Student UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Delete Student
+      tags:
+      - Students
+    get:
+      parameters:
+      - description: Student UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get Student by ID
+      tags:
+      - Students
+    put:
+      parameters:
+      - description: Student UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.StudentUpdateRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update Student
+      tags:
+      - Students
+  /api/v1/students/{id}/advisor:
+    put:
+      parameters:
+      - description: Student UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Advisor UUID
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            advisor_id:
+              type: string
+          type: object
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Assign Advisor to Student
+      tags:
+      - Students
+  /api/v1/students/advisor/{advisor_id}:
+    get:
+      parameters:
+      - description: Advisor UUID
+        in: path
+        name: advisor_id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get Students by Advisor
+      tags:
+      - Students
+  /api/v1/students/user/{user_id}:
+    get:
+      parameters:
+      - description: User UUID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get Student by User ID
+      tags:
+      - Students
+  /api/v1/users:
+    post:
+      description: Membuat user baru (Admin/Dosen/Mahasiswa)
+      parameters:
+      - description: User Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserCreateRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Create User (Admin)
+      tags:
+      - Users
+  /api/v1/users/{id}:
+    delete:
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Delete User
+      tags:
+      - Users
+    get:
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get User by ID
+      tags:
+      - Users
+    put:
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserUpdateRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update User
+      tags:
+      - Users
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"UAS_achievement_system/config"
+	"github.com/fitrinovs/achievement_system/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -38,6 +38,7 @@ func ConnectPostgreSQL(cfg *config.Config) {
 		log.Fatal("Failed to get database instance:", err)
 	}
 
+	// Connection pool settings
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 
