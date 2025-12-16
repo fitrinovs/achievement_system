@@ -593,9 +593,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "Lecturers"
                 ],
@@ -607,6 +604,15 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/model.Lecturer"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -655,6 +661,45 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/lecturers/user/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Lecturers"
+                ],
+                "summary": "Get Lecturer by User ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Lecturer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -668,48 +713,12 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/lecturers/user/{user_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Lecturers"
-                ],
-                "summary": "Get Lecturer by User ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID (UUID)",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.Lecturer"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/lecturers/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
-                "produces": [
-                    "application/json"
                 ],
                 "tags": [
                     "Lecturers"
@@ -718,7 +727,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Lecturer ID (UUID)",
+                        "description": "Lecturer UUID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -729,6 +738,24 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/model.Lecturer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -739,12 +766,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "Lecturers"
                 ],
@@ -752,13 +773,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Lecturer ID (UUID)",
+                        "description": "Lecturer UUID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Data Update",
+                        "description": "Lecturer Data",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -770,6 +791,21 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Lecturer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -807,6 +843,84 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/lecturers/{id}/advisees": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Lecturers"
+                ],
+                "summary": "Get Advisees (Students) by Lecturer ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Lecturer UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Advisee"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -822,7 +936,17 @@ const docTemplate = `{
                     "Students"
                 ],
                 "summary": "Get All Students",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Student"
+                            }
+                        }
+                    }
+                }
             },
             "post": {
                 "security": [
@@ -836,7 +960,7 @@ const docTemplate = `{
                 "summary": "Create Student",
                 "parameters": [
                     {
-                        "description": "Data Mahasiswa",
+                        "description": "Student Data",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -845,53 +969,41 @@ const docTemplate = `{
                         }
                     }
                 ],
-                "responses": {}
-            }
-        },
-        "/api/v1/students/advisor/{advisor_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.Student"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
-                ],
-                "tags": [
-                    "Students"
-                ],
-                "summary": "Get Students by Advisor",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Advisor UUID",
-                        "name": "advisor_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/students/user/{user_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "tags": [
-                    "Students"
-                ],
-                "summary": "Get Student by User ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User UUID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
+                }
             }
         },
         "/api/v1/students/{id}": {
@@ -914,7 +1026,23 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Student"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             },
             "put": {
                 "security": [
@@ -935,7 +1063,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Data Update",
+                        "description": "Student Data",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -944,7 +1072,14 @@ const docTemplate = `{
                         }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Student"
+                        }
+                    }
+                }
             },
             "delete": {
                 "security": [
@@ -965,7 +1100,50 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/students/{id}/achievements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Get Achievements by Student",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Student UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Achievement"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/students/{id}/advisor": {
@@ -978,7 +1156,7 @@ const docTemplate = `{
                 "tags": [
                     "Students"
                 ],
-                "summary": "Assign Advisor to Student",
+                "summary": "Assign Advisor",
                 "parameters": [
                     {
                         "type": "string",
@@ -1002,7 +1180,17 @@ const docTemplate = `{
                         }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/users": {
@@ -1291,6 +1479,27 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Advisee": {
+            "type": "object",
+            "properties": {
+                "academic_year": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "description": "Diambil dari User yang di-preload",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nim": {
+                    "type": "string"
+                },
+                "program_study": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Lecturer": {
             "type": "object",
             "properties": {
@@ -1450,20 +1659,19 @@ const docTemplate = `{
                 "advisor_id": {
                     "type": "string"
                 },
-                "created_at": {
+                "createdAt": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
                 "nim": {
-                    "description": "Pastikan field ini bernama NIM",
                     "type": "string"
                 },
                 "program_study": {
                     "type": "string"
                 },
-                "updated_at": {
+                "updatedAt": {
                     "type": "string"
                 },
                 "user": {
@@ -1486,11 +1694,7 @@ const docTemplate = `{
                 "academic_year": {
                     "type": "string"
                 },
-                "advisor_id": {
-                    "type": "string"
-                },
                 "nim": {
-                    "description": "\u003c--- GANTI INI",
                     "type": "string"
                 },
                 "program_study": {
@@ -1505,9 +1709,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "academic_year": {
-                    "type": "string"
-                },
-                "advisor_id": {
                     "type": "string"
                 },
                 "program_study": {

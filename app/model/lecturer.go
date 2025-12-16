@@ -29,3 +29,14 @@ type LecturerUpdateRequest struct {
 	LecturerID string `json:"lecturer_id"`
 	Department string `json:"department"`
 }
+
+// ===================================
+// Advisee (Model Response untuk GET /lecturers/:id/advisees)
+// ===================================
+type Advisee struct {
+	ID           uuid.UUID `json:"id"`
+	NIM          string    `json:"nim"`
+	FullName     string    `json:"full_name"` // Diambil dari User yang di-preload
+	ProgramStudy string    `json:"program_study"`
+	AcademicYear string    `json:"academic_year"`
+}

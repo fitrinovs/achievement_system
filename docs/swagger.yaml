@@ -61,6 +61,20 @@ definitions:
     required:
     - status
     type: object
+  model.Advisee:
+    properties:
+      academic_year:
+        type: string
+      full_name:
+        description: Diambil dari User yang di-preload
+        type: string
+      id:
+        type: string
+      nim:
+        type: string
+      program_study:
+        type: string
+    type: object
   model.Lecturer:
     properties:
       created_at:
@@ -165,16 +179,15 @@ definitions:
         $ref: '#/definitions/model.Lecturer'
       advisor_id:
         type: string
-      created_at:
+      createdAt:
         type: string
       id:
         type: string
       nim:
-        description: Pastikan field ini bernama NIM
         type: string
       program_study:
         type: string
-      updated_at:
+      updatedAt:
         type: string
       user:
         $ref: '#/definitions/model.User'
@@ -185,10 +198,7 @@ definitions:
     properties:
       academic_year:
         type: string
-      advisor_id:
-        type: string
       nim:
-        description: <--- GANTI INI
         type: string
       program_study:
         type: string
@@ -203,8 +213,6 @@ definitions:
   model.StudentUpdateRequest:
     properties:
       academic_year:
-        type: string
-      advisor_id:
         type: string
       program_study:
         type: string
@@ -659,8 +667,6 @@ paths:
       - Auth
   /api/v1/lecturers:
     get:
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -668,6 +674,12 @@ paths:
             items:
               $ref: '#/definitions/model.Lecturer'
             type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Get All Lecturers
@@ -697,12 +709,6 @@ paths:
             additionalProperties:
               type: string
             type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
       security:
       - BearerAuth: []
       summary: Create Lecturer
@@ -723,6 +729,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Delete Lecturer
@@ -730,43 +748,59 @@ paths:
       - Lecturers
     get:
       parameters:
-      - description: Lecturer ID (UUID)
+      - description: Lecturer UUID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/model.Lecturer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Get Lecturer by ID
       tags:
       - Lecturers
     put:
-      consumes:
-      - application/json
       parameters:
-      - description: Lecturer ID (UUID)
+      - description: Lecturer UUID
         in: path
         name: id
         required: true
         type: string
-      - description: Data Update
+      - description: Lecturer Data
         in: body
         name: request
         required: true
         schema:
           $ref: '#/definitions/model.LecturerUpdateRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/model.Lecturer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
           schema:
             additionalProperties:
               type: string
@@ -776,21 +810,69 @@ paths:
       summary: Update Lecturer
       tags:
       - Lecturers
-  /api/v1/lecturers/user/{user_id}:
+  /api/v1/lecturers/{id}/advisees:
     get:
       parameters:
-      - description: User ID (UUID)
+      - description: Lecturer UUID
         in: path
-        name: user_id
+        name: id
         required: true
         type: string
-      produces:
-      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Advisee'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Advisees (Students) by Lecturer ID
+      tags:
+      - Lecturers
+  /api/v1/lecturers/user/{id}:
+    get:
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/model.Lecturer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Get Lecturer by User ID
@@ -798,7 +880,13 @@ paths:
       - Lecturers
   /api/v1/students:
     get:
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Student'
+            type: array
       security:
       - BearerAuth: []
       summary: Get All Students
@@ -806,13 +894,35 @@ paths:
       - Students
     post:
       parameters:
-      - description: Data Mahasiswa
+      - description: Student Data
         in: body
         name: request
         required: true
         schema:
           $ref: '#/definitions/model.StudentCreateRequest'
-      responses: {}
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Student'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Create Student
@@ -826,7 +936,13 @@ paths:
         name: id
         required: true
         type: string
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Delete Student
@@ -839,7 +955,17 @@ paths:
         name: id
         required: true
         type: string
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Student'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Get Student by ID
@@ -852,16 +978,40 @@ paths:
         name: id
         required: true
         type: string
-      - description: Data Update
+      - description: Student Data
         in: body
         name: request
         required: true
         schema:
           $ref: '#/definitions/model.StudentUpdateRequest'
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Student'
       security:
       - BearerAuth: []
       summary: Update Student
+      tags:
+      - Students
+  /api/v1/students/{id}/achievements:
+    get:
+      parameters:
+      - description: Student UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Achievement'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get Achievements by Student
       tags:
       - Students
   /api/v1/students/{id}/advisor:
@@ -881,38 +1031,16 @@ paths:
             advisor_id:
               type: string
           type: object
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
-      summary: Assign Advisor to Student
-      tags:
-      - Students
-  /api/v1/students/advisor/{advisor_id}:
-    get:
-      parameters:
-      - description: Advisor UUID
-        in: path
-        name: advisor_id
-        required: true
-        type: string
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Get Students by Advisor
-      tags:
-      - Students
-  /api/v1/students/user/{user_id}:
-    get:
-      parameters:
-      - description: User UUID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      responses: {}
-      security:
-      - BearerAuth: []
-      summary: Get Student by User ID
+      summary: Assign Advisor
       tags:
       - Students
   /api/v1/users:

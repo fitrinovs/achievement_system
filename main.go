@@ -88,14 +88,17 @@ func main() {
 	userRepo := repository.NewUserRepository(database.DB)
 	lecturerRepo := repository.NewLecturerRepository(database.DB)
 	studentRepo := repository.NewStudentRepository(database.DB)
-	achievementRepo := repository.NewAchievementRepository(database.DB)
+	achievementRepo := repository.NewAchievementRepository(database.DB) 
 
 	// B. Services
-	// PERBAIKAN: NewAuthService membutuhkan userRepo, studentRepo, dan lecturerRepo
 	authService := service.NewAuthService(userRepo, studentRepo, lecturerRepo)
-	studentService := service.NewStudentService(studentRepo, userRepo, lecturerRepo)
-	lecturerService := service.NewLecturerService(lecturerRepo, userRepo)
-	// TAMBAHAN: Inisialisasi UserService
+	
+	// StudentService membutuhkan achievementRepo
+	studentService := service.NewStudentService(studentRepo, userRepo, lecturerRepo, achievementRepo) 
+	
+	// LecturerService membutuhkan studentRepo
+	lecturerService := service.NewLecturerService(lecturerRepo, userRepo, studentRepo) 
+	
 	userService := service.NewUserService(userRepo) 
 
 	achievementService := service.NewAchievementService(achievementRepo, studentRepo, lecturerRepo)
@@ -141,7 +144,7 @@ func main() {
 	// 9. SETUP ROUTES
 	// ========================================================
 
-	// PERBAIKAN: Tambahkan userService sebagai parameter
+	// Pastikan 5 service inti disalurkan ke route.SetupRoutes
 	route.SetupRoutes(router, authService, studentService, lecturerService, userService, achievementService)
 
 	// Serve static files
@@ -157,7 +160,6 @@ func main() {
 	}
 }
 
-// ... (func corsMiddleware dan healthCheckHandler tetap sama) ...
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")

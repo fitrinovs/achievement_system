@@ -11,39 +11,49 @@ import (
 
 type StudentService interface {
 	CreateStudent(c *gin.Context)
-	GetStudentByID(c *gin.Context)
-	GetStudentByUserID(c *gin.Context)
 	GetAllStudents(c *gin.Context)
-	GetStudentsByAdvisorID(c *gin.Context)
+	GetStudentByID(c *gin.Context)
 	UpdateStudent(c *gin.Context)
 	DeleteStudent(c *gin.Context)
+
 	AssignAdvisor(c *gin.Context)
+	GetAchievementsByStudentID(c *gin.Context)
 }
 
 type studentService struct {
-	studentRepo  repository.StudentRepository
-	userRepo     repository.UserRepository
-	lecturerRepo repository.LecturerRepository
+	studentRepo     repository.StudentRepository
+	userRepo        repository.UserRepository
+	lecturerRepo    repository.LecturerRepository
+	achievementRepo repository.AchievementRepository
 }
 
 func NewStudentService(
 	studentRepo repository.StudentRepository,
 	userRepo repository.UserRepository,
 	lecturerRepo repository.LecturerRepository,
+	achievementRepo repository.AchievementRepository,
 ) StudentService {
 	return &studentService{
-		studentRepo:  studentRepo,
-		userRepo:     userRepo,
-		lecturerRepo: lecturerRepo,
+		studentRepo:     studentRepo,
+		userRepo:        userRepo,
+		lecturerRepo:    lecturerRepo,
+		achievementRepo: achievementRepo,
 	}
 }
 
-// CreateStudent godoc
-// @Summary      Create Student
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        request body model.StudentCreateRequest true "Data Mahasiswa"
-// @Router       /api/v1/students [post]
+//
+// =======================
+// CREATE STUDENT
+// =======================
+// @Summary Create Student
+// @Tags Students
+// @Security BearerAuth
+// @Param request body model.StudentCreateRequest true "Student Data"
+// @Success 201 {object} model.Student
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /api/v1/students [post]
 func (s *studentService) CreateStudent(c *gin.Context) {
 	var req model.StudentCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -57,64 +67,66 @@ func (s *studentService) CreateStudent(c *gin.Context) {
 		return
 	}
 
-	// 1. Cek User Exist
-	_, err = s.userRepo.FindByID(userUUID)
-	if err != nil {
+	// Cek user
+	if _, err := s.userRepo.FindByID(userUUID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "user not found"})
 		return
 	}
 
-	// 2. Cek Duplicate NIM (Sebelumnya StudentID)
-	// PERBAIKAN: Gunakan FindByNIM dan req.NIM
-	existing, _ := s.studentRepo.FindByNIM(req.NIM)
-	if existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "NIM already registered"})
+	// Cek apakah student sudah ada
+	if _, err := s.studentRepo.FindByUserID(userUUID); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "student already exists"})
 		return
 	}
 
-	// 3. Cek Advisor jika ada
-	var advisorUUID *uuid.UUID
-	if req.AdvisorID != "" {
-		parsedID, err := uuid.Parse(req.AdvisorID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid advisor id format"})
-			return
-		}
-
-		_, err = s.lecturerRepo.FindByID(parsedID)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "advisor (lecturer) not found"})
-			return
-		}
-		advisorUUID = &parsedID
-	}
-
-	student := &model.Student{
-		UserID: userUUID,
-		// PERBAIKAN: Gunakan NIM
+	student := model.Student{
+		UserID:       userUUID,
 		NIM:          req.NIM,
 		ProgramStudy: req.ProgramStudy,
 		AcademicYear: req.AcademicYear,
-		AdvisorID:    advisorUUID,
 	}
 
-	if err := s.studentRepo.Create(student); err != nil {
+	if err := s.studentRepo.Create(&student); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"status": "success", "data": student})
+	result, _ := s.studentRepo.FindByID(student.ID)
+	c.JSON(http.StatusCreated, gin.H{"status": "success", "data": result})
 }
 
-// GetStudentByID godoc
-// @Summary      Get Student by ID
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        id path string true "Student UUID"
-// @Router       /api/v1/students/{id} [get]
+//
+// =======================
+// GET ALL STUDENTS
+// =======================
+// @Summary Get All Students
+// @Tags Students
+// @Security BearerAuth
+// @Success 200 {array} model.Student
+// @Router /api/v1/students [get]
+func (s *studentService) GetAllStudents(c *gin.Context) {
+	students, err := s.studentRepo.FindAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": students})
+}
+
+//
+// =======================
+// GET STUDENT BY ID
+// =======================
+// @Summary Get Student by ID
+// @Tags Students
+// @Security BearerAuth
+// @Param id path string true "Student UUID"
+// @Success 200 {object} model.Student
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/students/{id} [get]
 func (s *studentService) GetStudentByID(c *gin.Context) {
-	id := c.Param("id")
-	studentUUID, err := uuid.Parse(id)
+	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid student id format"})
 		return
@@ -129,73 +141,19 @@ func (s *studentService) GetStudentByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "success", "data": student})
 }
 
-// GetStudentByUserID godoc
-// @Summary      Get Student by User ID
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        user_id path string true "User UUID"
-// @Router       /api/v1/students/user/{user_id} [get]
-func (s *studentService) GetStudentByUserID(c *gin.Context) {
-	userID := c.Param("user_id")
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid user id format"})
-		return
-	}
-
-	student, err := s.studentRepo.FindByUserID(userUUID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "student not found"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"status": "success", "data": student})
-}
-
-// GetAllStudents godoc
-// @Summary      Get All Students
-// @Tags         Students
-// @Security     BearerAuth
-// @Router       /api/v1/students [get]
-func (s *studentService) GetAllStudents(c *gin.Context) {
-	students, err := s.studentRepo.FindAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"status": "success", "data": students})
-}
-
-// GetStudentsByAdvisorID godoc
-// @Summary      Get Students by Advisor
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        advisor_id path string true "Advisor UUID"
-// @Router       /api/v1/students/advisor/{advisor_id} [get]
-func (s *studentService) GetStudentsByAdvisorID(c *gin.Context) {
-	advisorID := c.Param("advisor_id")
-	advUUID, err := uuid.Parse(advisorID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid advisor id format"})
-		return
-	}
-	students, err := s.studentRepo.FindByAdvisorID(advUUID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"status": "success", "data": students})
-}
-
-// UpdateStudent godoc
-// @Summary      Update Student
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        id path string true "Student UUID"
-// @Param        request body model.StudentUpdateRequest true "Data Update"
-// @Router       /api/v1/students/{id} [put]
+//
+// =======================
+// UPDATE STUDENT
+// =======================
+// @Summary Update Student
+// @Tags Students
+// @Security BearerAuth
+// @Param id path string true "Student UUID"
+// @Param request body model.StudentUpdateRequest true "Student Data"
+// @Success 200 {object} model.Student
+// @Router /api/v1/students/{id} [put]
 func (s *studentService) UpdateStudent(c *gin.Context) {
-	id := c.Param("id")
-	studentUUID, err := uuid.Parse(id)
+	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid student id format"})
 		return
@@ -220,38 +178,26 @@ func (s *studentService) UpdateStudent(c *gin.Context) {
 		student.AcademicYear = req.AcademicYear
 	}
 
-	if req.AdvisorID != "" {
-		advUUID, err := uuid.Parse(req.AdvisorID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid advisor id format"})
-			return
-		}
-
-		_, err = s.lecturerRepo.FindByID(advUUID)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "advisor (lecturer) not found"})
-			return
-		}
-		student.AdvisorID = &advUUID
-	}
-
 	if err := s.studentRepo.Update(student); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Student updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": student})
 }
 
-// DeleteStudent godoc
-// @Summary      Delete Student
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        id path string true "Student UUID"
-// @Router       /api/v1/students/{id} [delete]
+//
+// =======================
+// DELETE STUDENT
+// =======================
+// @Summary Delete Student
+// @Tags Students
+// @Security BearerAuth
+// @Param id path string true "Student UUID"
+// @Success 200 {object} map[string]string
+// @Router /api/v1/students/{id} [delete]
 func (s *studentService) DeleteStudent(c *gin.Context) {
-	id := c.Param("id")
-	studentUUID, err := uuid.Parse(id)
+	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid student id format"})
 		return
@@ -262,50 +208,86 @@ func (s *studentService) DeleteStudent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Student deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "student deleted"})
 }
 
-// AssignAdvisor godoc
-// @Summary      Assign Advisor to Student
-// @Tags         Students
-// @Security     BearerAuth
-// @Param        id path string true "Student UUID"
-// @Param        request body object{advisor_id=string} true "Advisor UUID"
-// @Router       /api/v1/students/{id}/advisor [put]
+//
+// =======================
+// ASSIGN ADVISOR
+// =======================
+// @Summary Assign Advisor
+// @Tags Students
+// @Security BearerAuth
+// @Param id path string true "Student UUID"
+// @Param request body object{advisor_id=string} true "Advisor UUID"
+// @Success 200 {object} map[string]string
+// @Router /api/v1/students/{id}/advisor [put]
 func (s *studentService) AssignAdvisor(c *gin.Context) {
-	id := c.Param("id")
-	sUUID, err := uuid.Parse(id)
+	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid student id format"})
 		return
 	}
 
-	// Ambil advisor_id dari JSON Body
 	var req struct {
-		AdvisorID string `json:"advisor_id"`
+		AdvisorID string `json:"advisor_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	aUUID, err := uuid.Parse(req.AdvisorID)
+	advisorUUID, err := uuid.Parse(req.AdvisorID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid advisor id format"})
 		return
 	}
 
-	// Cek exist advisor
-	_, err = s.lecturerRepo.FindByID(aUUID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "advisor (lecturer) not found"})
+	if _, err := s.lecturerRepo.FindByID(advisorUUID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "advisor not found"})
 		return
 	}
 
-	if err := s.studentRepo.AssignAdvisor(sUUID, aUUID); err != nil {
+	if _, err := s.studentRepo.FindByID(studentUUID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "student not found"})
+		return
+	}
+
+	if err := s.studentRepo.AssignAdvisor(studentUUID, advisorUUID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Advisor assigned successfully"})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "advisor assigned"})
+}
+
+//
+// =======================
+// GET STUDENT ACHIEVEMENTS
+// =======================
+// @Summary Get Achievements by Student
+// @Tags Students
+// @Security BearerAuth
+// @Param id path string true "Student UUID"
+// @Success 200 {array} model.Achievement
+// @Router /api/v1/students/{id}/achievements [get]
+func (s *studentService) GetAchievementsByStudentID(c *gin.Context) {
+	studentUUID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid student id format"})
+		return
+	}
+
+	if _, err := s.studentRepo.FindByID(studentUUID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "student not found"})
+		return
+	}
+
+	achievements, err := s.achievementRepo.FindByStudentID(studentUUID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": achievements})
 }

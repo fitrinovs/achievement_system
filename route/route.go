@@ -9,81 +9,102 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// PERBAIKAN: Fungsi ini sudah memiliki 6 parameter Service
 func SetupRoutes(
 	r *gin.Engine,
 	authService service.AuthService,
 	studentService service.StudentService,
 	lecturerService service.LecturerService,
-	userService service.UserService, // <-- UserService sudah ada
+	userService service.UserService,
 	achievementService service.AchievementService,
 ) {
-	// Integrasi Swagger
+
+	// =========================
+	// SWAGGER
+	// =========================
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api/v1")
 
-	// ==========================================
-	// 1. AUTHENTICATION (Public Routes)
-	// ==========================================
-
-	authPublicGroup := api.Group("/auth")
+	// =========================
+	// AUTH (PUBLIC)
+	// =========================
+	authPublic := api.Group("/auth")
 	{
-		authPublicGroup.POST("/login", authService.Login)
-		authPublicGroup.POST("/refresh", authService.RefreshToken)
+		authPublic.POST("/login", authService.Login)
+		authPublic.POST("/refresh", authService.RefreshToken)
 	}
 
-	// ==========================================
-	// 2. PROTECTED ROUTES
-	// ==========================================
-
-	protected := api.Group("/")
+	// =========================
+	// AUTHENTICATED ROUTES
+	// =========================
+	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware())
 
-	// --- AUTH PROTECTED ROUTES ---
-	authProtectedGroup := protected.Group("/auth")
+	// =========================
+	// AUTH (PROTECTED)
+	// =========================
+	authProtected := protected.Group("/auth")
 	{
-		authProtectedGroup.GET("/profile", authService.GetProfile)
-		authProtectedGroup.POST("/logout", authService.Logout)
+		authProtected.GET("/profile", authService.GetProfile)
+		authProtected.POST("/logout", authService.Logout)
 	}
 
-	// --- USER ROUTES --- (PROTECTED)
+	// =========================
+	// USERS (ADMIN)
+	// =========================
 	userGroup := protected.Group("/users")
 	{
-		userGroup.GET("", userService.GetAllUsers)      // TAMBAHAN: Get All Users
+		userGroup.GET("", userService.GetAllUsers)
 		userGroup.POST("", userService.CreateUser)
 		userGroup.GET("/:id", userService.GetUserByID)
 		userGroup.PUT("/:id", userService.UpdateUser)
-		userGroup.PUT("/:id/role", userService.UpdateUserRole) // TAMBAHAN: Update User Role
+		userGroup.PUT("/:id/role", userService.UpdateUserRole)
 		userGroup.DELETE("/:id", userService.DeleteUser)
 	}
 
-	// --- STUDENT ROUTES ---
+	// =================================================
+	// STUDENTS (SESUAI SRS & STUDENT SERVICE)
+	// =================================================
 	studentGroup := protected.Group("/students")
 	{
+		// CRUD
 		studentGroup.POST("", studentService.CreateStudent)
+		studentGroup.GET("", studentService.GetAllStudents)
 		studentGroup.GET("/:id", studentService.GetStudentByID)
 		studentGroup.PUT("/:id", studentService.UpdateStudent)
+		studentGroup.DELETE("/:id", studentService.DeleteStudent)
+
+		// SRS
+		studentGroup.PUT("/:id/advisor", studentService.AssignAdvisor)
+		studentGroup.GET("/:id/achievements", studentService.GetAchievementsByStudentID)
 	}
 
-	// --- LECTURER ROUTES ---
+	// =================================================
+	// LECTURERS (SESUAI SRS)
+	// =================================================
 	lecturerGroup := protected.Group("/lecturers")
 	{
+		// CRUD
 		lecturerGroup.POST("", lecturerService.CreateLecturer)
 		lecturerGroup.GET("", lecturerService.GetAllLecturers)
 		lecturerGroup.GET("/:id", lecturerService.GetLecturerByID)
-		lecturerGroup.GET("/user/:user_id", lecturerService.GetLecturerByUserID)
 		lecturerGroup.PUT("/:id", lecturerService.UpdateLecturer)
 		lecturerGroup.DELETE("/:id", lecturerService.DeleteLecturer)
+
+		// SRS
+		lecturerGroup.GET("/:id/advisees", lecturerService.GetAdviseesByLecturerID)
 	}
 
+	// =================================================
+	// ACHIEVEMENTS
+	// =================================================
 	achievementGroup := protected.Group("/achievements")
 	{
 		achievementGroup.POST("", achievementService.CreateAchievement)
 		achievementGroup.GET("/my", achievementService.GetMyAchievements)
 		achievementGroup.GET("/:id", achievementService.GetAchievementByID)
 
+		// Verifikasi (Dosen Wali)
 		achievementGroup.PUT("/:id/validate", achievementService.ValidateAchievement)
 	}
-
 }
