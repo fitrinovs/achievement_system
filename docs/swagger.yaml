@@ -458,7 +458,7 @@ info:
   title: Student Achievement API
   version: "1.0"
 paths:
-  /api/v1/achievements:
+  /achievements:
     get:
       consumes:
       - application/json
@@ -563,7 +563,7 @@ paths:
       summary: Create New Achievement
       tags:
       - Achievements
-  /api/v1/achievements/{id}:
+  /achievements/{id}:
     delete:
       consumes:
       - application/json
@@ -732,7 +732,7 @@ paths:
       summary: Update Achievement Data
       tags:
       - Achievements
-  /api/v1/achievements/{id}/attachments:
+  /achievements/{id}/attachments:
     post:
       consumes:
       - multipart/form-data
@@ -806,7 +806,7 @@ paths:
       summary: Upload Attachment/Proof
       tags:
       - Achievements
-  /api/v1/achievements/{id}/history:
+  /achievements/{id}/history:
     get:
       consumes:
       - application/json
@@ -837,7 +837,7 @@ paths:
       summary: Get Achievement History
       tags:
       - Achievements
-  /api/v1/achievements/{id}/reject:
+  /achievements/{id}/reject:
     post:
       consumes:
       - application/json
@@ -901,7 +901,7 @@ paths:
       summary: Reject Achievement
       tags:
       - Achievements
-  /api/v1/achievements/{id}/submit:
+  /achievements/{id}/submit:
     post:
       consumes:
       - application/json
@@ -960,7 +960,7 @@ paths:
       summary: Submit Achievement for Verification
       tags:
       - Achievements
-  /api/v1/achievements/{id}/verify:
+  /achievements/{id}/verify:
     post:
       consumes:
       - application/json
@@ -1018,7 +1018,7 @@ paths:
       summary: Verify Achievement (Approve)
       tags:
       - Achievements
-  /api/v1/auth/login:
+  /auth/login:
     post:
       consumes:
       - application/json
@@ -1052,7 +1052,7 @@ paths:
       summary: Login User
       tags:
       - Auth
-  /api/v1/auth/logout:
+  /auth/logout:
     post:
       consumes:
       - application/json
@@ -1074,7 +1074,7 @@ paths:
       summary: Logout User
       tags:
       - Auth
-  /api/v1/auth/profile:
+  /auth/profile:
     get:
       description: Mendapatkan profile user yang sedang login
       produces:
@@ -1112,7 +1112,7 @@ paths:
       summary: Get User Profile
       tags:
       - Auth
-  /api/v1/auth/refresh:
+  /auth/refresh:
     post:
       consumes:
       - application/json
@@ -1157,7 +1157,7 @@ paths:
       summary: Refresh Access Token
       tags:
       - Auth
-  /api/v1/lecturers:
+  /lecturers:
     get:
       responses:
         "200":
@@ -1206,7 +1206,7 @@ paths:
       summary: Create Lecturer
       tags:
       - Lecturers
-  /api/v1/lecturers/{id}:
+  /lecturers/{id}:
     delete:
       parameters:
       - description: Lecturer ID (UUID)
@@ -1302,7 +1302,7 @@ paths:
       summary: Update Lecturer
       tags:
       - Lecturers
-  /api/v1/lecturers/{id}/advisees:
+  /lecturers/{id}/advisees:
     get:
       parameters:
       - description: Lecturer UUID
@@ -1340,7 +1340,7 @@ paths:
       summary: Get Advisees (Students) by Lecturer ID
       tags:
       - Lecturers
-  /api/v1/lecturers/user/{id}:
+  /lecturers/user/{id}:
     get:
       parameters:
       - description: User UUID
@@ -1370,7 +1370,7 @@ paths:
       summary: Get Lecturer by User ID
       tags:
       - Lecturers
-  /api/v1/reports/statistics:
+  /reports/statistics:
     get:
       description: Endpoint placeholder untuk menampilkan statistik prestasi global.
       responses:
@@ -1388,7 +1388,7 @@ paths:
       summary: Get Global Achievement Statistics
       tags:
       - Reports
-  /api/v1/reports/student-report:
+  /reports/student-report:
     get:
       description: Endpoint placeholder untuk mendapatkan daftar laporan prestasi
         mahasiswa (Mungkin sama dengan GetReportByStudentID jika ID dihilangkan).
@@ -1407,7 +1407,7 @@ paths:
       summary: Get Student Achievement Report (List)
       tags:
       - Reports
-  /api/v1/students:
+  /students:
     get:
       responses:
         "200":
@@ -1457,7 +1457,7 @@ paths:
       summary: Create Student
       tags:
       - Students
-  /api/v1/students/{id}:
+  /students/{id}:
     delete:
       parameters:
       - description: Student UUID
@@ -1523,7 +1523,7 @@ paths:
       summary: Update Student
       tags:
       - Students
-  /api/v1/students/{id}/achievements:
+  /students/{id}/achievements:
     get:
       description: Mengambil daftar referensi prestasi (PGSQL) milik mahasiswa.
       parameters:
@@ -1556,7 +1556,7 @@ paths:
       summary: Get Achievements by Student
       tags:
       - Students
-  /api/v1/students/{id}/advisor:
+  /students/{id}/advisor:
     put:
       parameters:
       - description: Student UUID
@@ -1585,7 +1585,7 @@ paths:
       summary: Assign Advisor
       tags:
       - Students
-  /api/v1/users:
+  /users:
     get:
       description: Mendapatkan daftar semua user yang aktif
       produces:
@@ -1617,7 +1617,7 @@ paths:
       summary: Create User (Admin)
       tags:
       - Users
-  /api/v1/users/{id}:
+  /users/{id}:
     delete:
       parameters:
       - description: User UUID
@@ -1663,7 +1663,7 @@ paths:
       summary: Update User
       tags:
       - Users
-  /api/v1/users/{id}/role:
+  /users/{id}/role:
     put:
       description: Mengubah peran (Role) pengguna.
       parameters:

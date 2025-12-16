@@ -143,7 +143,7 @@ func (s *reportService) GetReportByStudentID(c *gin.Context) {
 // @Tags Reports
 // @Security BearerAuth
 // @Success 501 {object} object{status=string,message=string}
-// @Router /api/v1/reports/statistics [get]
+// @Router /reports/statistics [get]
 func (s *reportService) GetAchievementStatistics(c *gin.Context) {
 	// Pemasangan sementara (Stub) agar router tidak error.
 	c.JSON(http.StatusNotImplemented, gin.H{"status": "info", "message": "Endpoint GetAchievementStatistics belum diimplementasikan."})
@@ -154,7 +154,7 @@ func (s *reportService) GetAchievementStatistics(c *gin.Context) {
 // @Tags Reports
 // @Security BearerAuth
 // @Success 501 {object} object{status=string,message=string}
-// @Router /api/v1/reports/student-report [get]
+// @Router /reports/student-report [get]
 func (s *reportService) GetStudentAchievementReport(c *gin.Context) {
 	// Pemasangan sementara (Stub) agar router tidak error.
 	c.JSON(http.StatusNotImplemented, gin.H{"status": "info", "message": "Endpoint GetStudentAchievementReport belum diimplementasikan."})

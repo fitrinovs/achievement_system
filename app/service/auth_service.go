@@ -48,7 +48,7 @@ func NewAuthService(
 // @Success      200  {object}  model.LoginResponse
 // @Failure      400  {object}  map[string]string
 // @Failure      401  {object}  map[string]string
-// @Router       /api/v1/auth/login [post]
+// @Router       /auth/login [post]
 func (s *authService) Login(c *gin.Context) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -116,7 +116,7 @@ func (s *authService) Login(c *gin.Context) {
 // @Success      200  {object}  object{status=string,data=model.UserProfileResponse}
 // @Failure      401  {object}  object{status=string,message=string}
 // @Failure      404  {object}  object{status=string,message=string}
-// @Router       /api/v1/auth/profile [get]
+// @Router       /auth/profile [get]
 func (s *authService) GetProfile(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	userUUID, err := uuid.Parse(userIDStr)
@@ -173,6 +173,7 @@ func (s *authService) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "success", "data": profile})
 }
 
+
 // RefreshToken godoc
 // @Summary      Refresh Access Token
 // @Description  Mendapatkan access token baru menggunakan refresh token
@@ -183,7 +184,7 @@ func (s *authService) GetProfile(c *gin.Context) {
 // @Success      200  {object}  object{status=string,data=model.RefreshTokenResponse}
 // @Failure      400  {object}  object{status=string,message=string}
 // @Failure      401  {object}  object{status=string,message=string}
-// @Router       /api/v1/auth/refresh [post]
+// @Router       /auth/refresh [post]
 func (s *authService) RefreshToken(c *gin.Context) {
 	var req model.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -246,7 +247,7 @@ func (s *authService) RefreshToken(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {object}  object{status=string,message=string}
-// @Router       /api/v1/auth/logout [post]
+// @Router       /auth/logout [post]
 func (s *authService) Logout(c *gin.Context) {
 	// Ambil token dari header
 	authHeader := c.GetHeader("Authorization")

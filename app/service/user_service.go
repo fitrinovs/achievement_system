@@ -37,7 +37,7 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 // @Tags         Users
 // @Security     BearerAuth
 // @Param        request body model.UserCreateRequest true "User Data"
-// @Router       /api/v1/users [post]
+// @Router       /users [post]
 func (s *userService) CreateUser(c *gin.Context) {
 	var req model.UserCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -101,7 +101,7 @@ func (s *userService) CreateUser(c *gin.Context) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200 {array} model.User
-// @Router       /api/v1/users [get]
+// @Router       /users [get]
 func (s *userService) GetAllUsers(c *gin.Context) {
 	users, err := s.userRepo.FindAll()
 	if err != nil {
@@ -123,7 +123,7 @@ func (s *userService) GetAllUsers(c *gin.Context) {
 // @Tags         Users
 // @Security     BearerAuth
 // @Param        id path string true "User UUID"
-// @Router       /api/v1/users/{id} [get]
+// @Router       /users/{id} [get]
 func (s *userService) GetUserByID(c *gin.Context) {
 	id := c.Param("id")
 	userUUID, err := uuid.Parse(id)
@@ -159,7 +159,7 @@ func (s *userService) GetUserByUsername(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        id path string true "User UUID"
 // @Param        request body model.UserUpdateRequest true "Update Data"
-// @Router       /api/v1/users/{id} [put]
+// @Router       /users/{id} [put]
 func (s *userService) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	userUUID, err := uuid.Parse(id)
@@ -210,7 +210,7 @@ func (s *userService) UpdateUser(c *gin.Context) {
 // @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
 // @Failure      500 {object} map[string]string
-// @Router       /api/v1/users/{id}/role [put]
+// @Router       /users/{id}/role [put]
 func (s *userService) UpdateUserRole(c *gin.Context) {
 	id := c.Param("id")
 	userUUID, err := uuid.Parse(id)
@@ -255,7 +255,7 @@ func (s *userService) UpdateUserRole(c *gin.Context) {
 // @Tags         Users
 // @Security     BearerAuth
 // @Param        id path string true "User UUID"
-// @Router       /api/v1/users/{id} [delete]
+// @Router       /users/{id} [delete]
 func (s *userService) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	userUUID, err := uuid.Parse(id)

@@ -21,7 +21,7 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
-        "/api/v1/achievements": {
+        "/achievements": {
             "get": {
                 "description": "Mahasiswa: List achievements sendiri (read_own). Dosen/Admin: List semua (read_list). (Saat ini mengembalikan 501)",
                 "consumes": [
@@ -181,7 +181,7 @@
                 }
             }
         },
-        "/api/v1/achievements/{id}": {
+        "/achievements/{id}": {
             "get": {
                 "description": "Mengambil detail prestasi berdasarkan ID.",
                 "consumes": [
@@ -439,7 +439,7 @@
                 }
             }
         },
-        "/api/v1/achievements/{id}/attachments": {
+        "/achievements/{id}/attachments": {
             "post": {
                 "description": "Mahasiswa mengunggah file bukti prestasi (hanya untuk status DRAFT/REJECTED).",
                 "consumes": [
@@ -552,7 +552,7 @@
                 }
             }
         },
-        "/api/v1/achievements/{id}/history": {
+        "/achievements/{id}/history": {
             "get": {
                 "description": "Endpoint placeholder untuk melihat riwayat perubahan status prestasi.",
                 "consumes": [
@@ -599,7 +599,7 @@
                 }
             }
         },
-        "/api/v1/achievements/{id}/reject": {
+        "/achievements/{id}/reject": {
             "post": {
                 "description": "Dosen Wali/Admin menolak prestasi (Status SUBMITTED -\u003e REJECTED).",
                 "consumes": [
@@ -697,7 +697,7 @@
                 }
             }
         },
-        "/api/v1/achievements/{id}/submit": {
+        "/achievements/{id}/submit": {
             "post": {
                 "description": "Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi SUBMITTED. File bukti wajib ada.",
                 "consumes": [
@@ -786,7 +786,7 @@
                 }
             }
         },
-        "/api/v1/achievements/{id}/verify": {
+        "/achievements/{id}/verify": {
             "post": {
                 "description": "Dosen Wali/Admin menyetujui prestasi (Status SUBMITTED -\u003e VERIFIED).",
                 "consumes": [
@@ -875,7 +875,7 @@
                 }
             }
         },
-        "/api/v1/auth/login": {
+        "/auth/login": {
             "post": {
                 "description": "Masuk sistem untuk mendapatkan Token JWT",
                 "consumes": [
@@ -927,7 +927,7 @@
                 }
             }
         },
-        "/api/v1/auth/logout": {
+        "/auth/logout": {
             "post": {
                 "security": [
                     {
@@ -963,7 +963,7 @@
                 }
             }
         },
-        "/api/v1/auth/profile": {
+        "/auth/profile": {
             "get": {
                 "security": [
                     {
@@ -1024,7 +1024,7 @@
                 }
             }
         },
-        "/api/v1/auth/refresh": {
+        "/auth/refresh": {
             "post": {
                 "description": "Mendapatkan access token baru menggunakan refresh token",
                 "consumes": [
@@ -1094,7 +1094,7 @@
                 }
             }
         },
-        "/api/v1/lecturers": {
+        "/lecturers": {
             "get": {
                 "security": [
                     {
@@ -1173,7 +1173,7 @@
                 }
             }
         },
-        "/api/v1/lecturers/user/{id}": {
+        "/lecturers/user/{id}": {
             "get": {
                 "security": [
                     {
@@ -1221,7 +1221,7 @@
                 }
             }
         },
-        "/api/v1/lecturers/{id}": {
+        "/lecturers/{id}": {
             "get": {
                 "security": [
                     {
@@ -1373,7 +1373,7 @@
                 }
             }
         },
-        "/api/v1/lecturers/{id}/advisees": {
+        "/lecturers/{id}/advisees": {
             "get": {
                 "security": [
                     {
@@ -1433,7 +1433,7 @@
                 }
             }
         },
-        "/api/v1/reports/statistics": {
+        "/reports/statistics": {
             "get": {
                 "security": [
                     {
@@ -1463,7 +1463,7 @@
                 }
             }
         },
-        "/api/v1/reports/student-report": {
+        "/reports/student-report": {
             "get": {
                 "security": [
                     {
@@ -1493,7 +1493,7 @@
                 }
             }
         },
-        "/api/v1/students": {
+        "/students": {
             "get": {
                 "security": [
                     {
@@ -1574,7 +1574,7 @@
                 }
             }
         },
-        "/api/v1/students/{id}": {
+        "/students/{id}": {
             "get": {
                 "security": [
                     {
@@ -1681,7 +1681,7 @@
                 }
             }
         },
-        "/api/v1/students/{id}/achievements": {
+        "/students/{id}/achievements": {
             "get": {
                 "security": [
                     {
@@ -1733,7 +1733,7 @@
                 }
             }
         },
-        "/api/v1/students/{id}/advisor": {
+        "/students/{id}/advisor": {
             "put": {
                 "security": [
                     {
@@ -1780,7 +1780,7 @@
                 }
             }
         },
-        "/api/v1/users": {
+        "/users": {
             "get": {
                 "security": [
                     {
@@ -1832,7 +1832,7 @@
                 "responses": {}
             }
         },
-        "/api/v1/users/{id}": {
+        "/users/{id}": {
             "get": {
                 "security": [
                     {
@@ -1906,7 +1906,7 @@
                 "responses": {}
             }
         },
-        "/api/v1/users/{id}/role": {
+        "/users/{id}/role": {
             "put": {
                 "security": [
                     {

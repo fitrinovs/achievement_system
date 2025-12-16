@@ -53,7 +53,7 @@ func NewLecturerService(
 // @Param        request body model.LecturerCreateRequest true "Data Dosen"
 // @Success      201  {object}  model.Lecturer
 // @Failure      400  {object}  map[string]string
-// @Router       /api/v1/lecturers [post]
+// @Router       /lecturers [post]
 func (s *lecturerService) CreateLecturer(c *gin.Context) {
 	var req model.LecturerCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -105,7 +105,7 @@ func (s *lecturerService) CreateLecturer(c *gin.Context) {
 // @Success      200 {object} model.Lecturer
 // @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
-// @Router       /api/v1/lecturers/{id} [get]
+// @Router       /lecturers/{id} [get]
 func (s *lecturerService) GetLecturerByID(c *gin.Context) {
 	id := c.Param("id")
 	lecturerUUID, err := uuid.Parse(id)
@@ -131,7 +131,7 @@ func (s *lecturerService) GetLecturerByID(c *gin.Context) {
 // @Success      200 {object} model.Lecturer
 // @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
-// @Router       /api/v1/lecturers/user/{id} [get]
+// @Router       /lecturers/user/{id} [get]
 func (s *lecturerService) GetLecturerByUserID(c *gin.Context) {
 	userID := c.Param("id")
 	userUUID, err := uuid.Parse(userID)
@@ -155,7 +155,7 @@ func (s *lecturerService) GetLecturerByUserID(c *gin.Context) {
 // @Security     BearerAuth
 // @Success      200 {array} model.Lecturer
 // @Failure      500 {object} map[string]string
-// @Router       /api/v1/lecturers [get]
+// @Router       /lecturers [get]
 func (s *lecturerService) GetAllLecturers(c *gin.Context) {
 	lecturers, err := s.lecturerRepo.FindAll()
 	if err != nil {
@@ -175,7 +175,7 @@ func (s *lecturerService) GetAllLecturers(c *gin.Context) {
 // @Success      200 {object} model.Lecturer
 // @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
-// @Router       /api/v1/lecturers/{id} [put]
+// @Router       /lecturers/{id} [put]
 func (s *lecturerService) UpdateLecturer(c *gin.Context) {
 	id := c.Param("id")
 	lecturerUUID, err := uuid.Parse(id)
@@ -219,7 +219,7 @@ func (s *lecturerService) UpdateLecturer(c *gin.Context) {
 // @Success      200  {object}  map[string]string
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
-// @Router       /api/v1/lecturers/{id} [delete]
+// @Router      /lecturers/{id} [delete]
 func (s *lecturerService) DeleteLecturer(c *gin.Context) {
 	id := c.Param("id")
 	lecturerUUID, err := uuid.Parse(id)
@@ -242,7 +242,7 @@ func (s *lecturerService) DeleteLecturer(c *gin.Context) {
 
 // ===================================
 // IMPLEMENTASI SRS: GetAdviseesByLecturerID
-// GET /api/v1/lecturers/:id/advisees
+// GET /lecturers/:id/advisees
 // ===================================
 // @Summary      Get Advisees (Students) by Lecturer ID
 // @Tags         Lecturers
@@ -252,7 +252,7 @@ func (s *lecturerService) DeleteLecturer(c *gin.Context) {
 // @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
 // @Failure      500 {object} map[string]string
-// @Router       /api/v1/lecturers/{id}/advisees [get]
+// @Router       /lecturers/{id}/advisees [get]
 func (s *lecturerService) GetAdviseesByLecturerID(c *gin.Context) {
 	lecturerID := c.Param("id")
 	lecturerUUID, err := uuid.Parse(lecturerID)

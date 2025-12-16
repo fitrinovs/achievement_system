@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"encoding/json" // Diperlukan untuk konversi struct Details ke map
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"encoding/json" // Diperlukan untuk konversi struct Details ke map
 
 	"github.com/fitrinovs/achievement_system/app/model"
 	"github.com/fitrinovs/achievement_system/app/repository"
@@ -114,7 +114,7 @@ func (s *achievementService) mergeAchievement(ctx context.Context, pgRef *model.
 	if mongoAch == nil {
 		return nil, errors.New("data integrity error: mongo content missing")
 	}
-	
+
 	return &model.AchievementDetailResponse{
 		// PGSQL (Workflow)
 		ID:            pgRef.ID,
@@ -124,7 +124,7 @@ func (s *achievementService) mergeAchievement(ctx context.Context, pgRef *model.
 		VerifiedAt:    pgRef.VerifiedAt,
 		VerifiedBy:    pgRef.VerifiedBy,
 		RejectionNote: pgRef.RejectionNote,
-		
+
 		// MongoDB (Content)
 		MongoAchievementID: pgRef.MongoAchievementID,
 		AchievementType:    mongoAch.AchievementType,
@@ -134,12 +134,11 @@ func (s *achievementService) mergeAchievement(ctx context.Context, pgRef *model.
 		Attachments:        mongoAch.Attachments,
 		Tags:               mongoAch.Tags,
 		Points:             mongoAch.Points,
-		
-		CreatedAt:          pgRef.CreatedAt, 
-		UpdatedAt:          pgRef.UpdatedAt,
+
+		CreatedAt: pgRef.CreatedAt,
+		UpdatedAt: pgRef.UpdatedAt,
 	}, nil
 }
-
 
 // =================================================================
 // PUBLIC HANDLER IMPLEMENTATION
@@ -156,7 +155,7 @@ func (s *achievementService) mergeAchievement(ctx context.Context, pgRef *model.
 // @Failure 400 {object} object{status=string,message=string}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 500 {object} object{status=string,message=string}
-// @Router /api/v1/achievements [post]
+// @Router /achievements [post]
 func (s *achievementService) CreateAchievement(c *gin.Context) {
 	student, err := s.getStudentByUserID(c)
 	if err != nil {
@@ -182,7 +181,7 @@ func (s *achievementService) CreateAchievement(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to unmarshal achievement details to map: " + err.Error()})
 		return
 	}
-	
+
 	// 1B. SIAPKAN DOKUMEN MONGO (Data Konten)
 	mongoAchievement := &model.Achievement{
 		StudentUUID:     student.ID,
@@ -212,7 +211,7 @@ func (s *achievementService) CreateAchievement(c *gin.Context) {
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
-	
+
 	// 4. INSERT KE POSTGRESQL
 	if err := s.achievementRepo.CreateReference(pgReference); err != nil {
 		// Rollback MongoDB jika PGSQL gagal (Best effort)
@@ -235,10 +234,10 @@ func (s *achievementService) CreateAchievement(c *gin.Context) {
 // @Success 200 {object} object{status=string,data=[]model.AchievementDetailResponse}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 500 {object} object{status=string,message=string}
-// @Router /api/v1/achievements [get]
+// @Router /achievements [get]
 func (s *achievementService) GetAchievementsList(c *gin.Context) {
 	// Implementasi List Hibrid (kompleks, perlu iterasi dan merge)
-	
+
 	permissionsAny, exists := c.Get("permissions")
 	if !exists {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Permissions not found in context"})
@@ -263,12 +262,12 @@ func (s *achievementService) GetAchievementsList(c *gin.Context) {
 		// Implementasi s.achievementRepo.FindAllReferences() diperlukan
 		err = errors.New("FindAllReferences not implemented in hybrid mode")
 	} else if hasReadOwn {
-		student, studentErr := s.getStudentByUserID(c) 
+		student, studentErr := s.getStudentByUserID(c)
 		if studentErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to retrieve student profile: " + studentErr.Error()})
 			return
 		}
-		
+
 		// Implementasi s.achievementRepo.FindReferencesByStudentID(student.ID) diperlukan
 		if student.ID == uuid.Nil {
 			err = errors.New("student ID is nil, cannot fetch own achievements")
@@ -283,11 +282,10 @@ func (s *achievementService) GetAchievementsList(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to fetch achievements: " + err.Error()})
 		return
 	}
-	
+
 	// Mengembalikan 501 karena implementasi list hibrid kompleks dan belum selesai.
 	c.JSON(http.StatusNotImplemented, gin.H{"status": "info", "message": "Listing achievements not fully implemented yet in hybrid mode. Repository functions need implementation."})
 }
-
 
 // @Summary Get Achievement Detail by ID
 // @Description Mengambil detail prestasi berdasarkan ID.
@@ -299,7 +297,7 @@ func (s *achievementService) GetAchievementsList(c *gin.Context) {
 // @Success 200 {object} object{status=string,data=model.AchievementDetailResponse}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id} [get]
+// @Router /achievements/{id} [get]
 func (s *achievementService) GetAchievementByID(c *gin.Context) {
 	id := c.Param("id")
 	achID, err := uuid.Parse(id)
@@ -318,7 +316,7 @@ func (s *achievementService) GetAchievementByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "Achievement not found"})
 		return
 	}
-	
+
 	// 2. Gabungkan data
 	mergedAch, err := s.mergeAchievement(c.Request.Context(), pgRef)
 	if err != nil {
@@ -342,7 +340,7 @@ func (s *achievementService) GetAchievementByID(c *gin.Context) {
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
 // @Failure 500 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id} [put]
+// @Router /achievements/{id} [put]
 func (s *achievementService) UpdateAchievement(c *gin.Context) {
 	achID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -371,66 +369,74 @@ func (s *achievementService) UpdateAchievement(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Forbidden: Not the owner of this achievement"})
 		return
 	}
-	
+
 	// STATUS CHECK
 	if pgRef.Status != model.StatusDraft && pgRef.Status != model.StatusRejected {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Cannot update achievement in status SUBMITTED or VERIFIED"})
 		return
 	}
-	
+
 	var req model.AchievementUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid request body: " + err.Error()})
 		return
 	}
-	
+
 	// 2. SIAPKAN UPDATE UNTUK MONGODB (Data Konten)
 	updates := make(map[string]interface{})
-	
-	if req.Title != nil { updates["title"] = *req.Title }
-	if req.Description != nil { updates["description"] = *req.Description }
-	
+
+	if req.Title != nil {
+		updates["title"] = *req.Title
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+
 	// KONVERSI UPDATE DETAILS (STRUCT POINTER) ke map[string]interface{}
-	if req.Details != nil { 
+	if req.Details != nil {
 		var detailsMap map[string]interface{}
 		detailsBytes, err := json.Marshal(*req.Details) // Dereference pointer
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Failed to process updated achievement details: " + err.Error()})
 			return
 		}
-		
+
 		if err := json.Unmarshal(detailsBytes, &detailsMap); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Failed to parse updated achievement details: " + err.Error()})
 			return
 		}
 		updates["details"] = detailsMap
 	}
-	
-	if req.Tags != nil { updates["tags"] = *req.Tags }
-	if req.Points != nil { updates["points"] = *req.Points }
+
+	if req.Tags != nil {
+		updates["tags"] = *req.Tags
+	}
+	if req.Points != nil {
+		updates["points"] = *req.Points
+	}
 	updates["updatedAt"] = time.Now()
 
 	// 3. UPDATE MONGODB
-	if len(updates) > 1 { 
+	if len(updates) > 1 {
 		err = s.achievementRepo.UpdateMongoAchievement(c.Request.Context(), pgRef.MongoAchievementID, updates)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to update achievement content (Mongo): " + err.Error()})
 			return
 		}
 	}
-	
+
 	// 4. UPDATE PGSQL (Workflow): Jika status Rejected, kembalikan ke Draft
 	if pgRef.Status == model.StatusRejected {
 		pgRef.Status = model.StatusDraft
-		pgRef.RejectionNote = nil 
+		pgRef.RejectionNote = nil
 	}
 	pgRef.UpdatedAt = time.Now()
-	
+
 	if err := s.achievementRepo.UpdateReference(pgRef); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to update achievement reference (PGSQL): " + err.Error()})
 		return
 	}
-	
+
 	// Response gabungan
 	mergedAch, _ := s.mergeAchievement(c.Request.Context(), pgRef)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Achievement updated successfully", "data": mergedAch})
@@ -446,7 +452,7 @@ func (s *achievementService) UpdateAchievement(c *gin.Context) {
 // @Success 200 {object} object{status=string,message=string}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id} [delete]
+// @Router /achievements/{id} [delete]
 func (s *achievementService) DeleteAchievement(c *gin.Context) {
 	achID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -475,25 +481,25 @@ func (s *achievementService) DeleteAchievement(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Forbidden: Not the owner of this achievement"})
 		return
 	}
-	
+
 	// STATUS CHECK
 	if pgRef.Status != model.StatusDraft && pgRef.Status != model.StatusRejected {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Cannot delete achievement in status SUBMITTED or VERIFIED"})
 		return
 	}
-	
+
 	// 2. Hapus dari MongoDB (Hapus permanen content)
 	if err := s.achievementRepo.DeleteMongoAchievement(c.Request.Context(), pgRef.MongoAchievementID); err != nil {
 		// Log warning, tapi kita lanjutkan soft-delete referensi (PGSQL).
 		fmt.Printf("Warning: Failed to delete achievement content (Mongo ID: %s): %v. Continuing with PGSQL delete.\n", pgRef.MongoAchievementID, err)
 	}
-	
+
 	// 3. Hapus dari PostgreSQL (Soft Delete reference)
 	if err := s.achievementRepo.DeleteReference(achID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to soft-delete achievement reference (PGSQL): " + err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Achievement and associated content deleted successfully"})
 }
 
@@ -508,14 +514,14 @@ func (s *achievementService) DeleteAchievement(c *gin.Context) {
 // @Failure 400 {object} object{status=string,message=string}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id}/submit [post]
+// @Router /achievements/{id}/submit [post]
 func (s *achievementService) SubmitAchievement(c *gin.Context) {
 	achID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid achievement ID format"})
 		return
 	}
-	
+
 	student, err := s.getStudentByUserID(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Forbidden: Only students can submit: " + err.Error()})
@@ -550,22 +556,22 @@ func (s *achievementService) SubmitAchievement(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to retrieve achievement content for attachment check: " + err.Error()})
 		return
 	}
-	if mongoAch == nil || len(mongoAch.Attachments) == 0 { 
+	if mongoAch == nil || len(mongoAch.Attachments) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "At least one attachment must be uploaded before submitting"})
 		return
 	}
-	
+
 	// 2. Update Status dan Waktu di PGSQL (Pointer Manual)
-	submitTime := time.Now() 
+	submitTime := time.Now()
 	pgRef.Status = model.StatusSubmitted
-	pgRef.SubmittedAt = &submitTime 
+	pgRef.SubmittedAt = &submitTime
 	pgRef.UpdatedAt = time.Now()
-	
+
 	if err := s.achievementRepo.UpdateReference(pgRef); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to submit achievement (PGSQL): " + err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Achievement submitted for verification"})
 }
 
@@ -580,7 +586,7 @@ func (s *achievementService) SubmitAchievement(c *gin.Context) {
 // @Failure 400 {object} object{status=string,message=string}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id}/verify [post]
+// @Router /achievements/{id}/verify [post]
 func (s *achievementService) VerifyAchievement(c *gin.Context) {
 	achID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -590,8 +596,8 @@ func (s *achievementService) VerifyAchievement(c *gin.Context) {
 
 	userIDStr := c.GetString("userID")
 	userUUID, _ := uuid.Parse(userIDStr)
-	
-	lecturer, err := s.lecturerRepo.FindByUserID(userUUID) 
+
+	lecturer, err := s.lecturerRepo.FindByUserID(userUUID)
 	if err != nil || lecturer == nil {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Only authorized validators (Lecturers/Admins) can verify"})
 		return
@@ -607,7 +613,7 @@ func (s *achievementService) VerifyAchievement(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "Achievement not found"})
 		return
 	}
-	
+
 	// STATUS CHECK
 	if pgRef.Status != model.StatusSubmitted {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Achievement is not in SUBMITTED status"})
@@ -615,17 +621,17 @@ func (s *achievementService) VerifyAchievement(c *gin.Context) {
 	}
 
 	// 2. Update Status, Validator ID, dan Waktu di PGSQL (Pointer Manual)
-	verifyTime := time.Now() 
+	verifyTime := time.Now()
 	pgRef.Status = model.StatusVerified
-	pgRef.VerifiedBy = &lecturer.ID 	
-	pgRef.VerifiedAt = &verifyTime 
+	pgRef.VerifiedBy = &lecturer.ID
+	pgRef.VerifiedAt = &verifyTime
 	pgRef.UpdatedAt = time.Now()
-	
+
 	if err := s.achievementRepo.UpdateReference(pgRef); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to verify achievement (PGSQL): " + err.Error()})
 		return
 	}
-	
+
 	// Response gabungan
 	mergedAch, _ := s.mergeAchievement(c.Request.Context(), pgRef)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Achievement approved successfully", "data": mergedAch})
@@ -643,29 +649,29 @@ func (s *achievementService) VerifyAchievement(c *gin.Context) {
 // @Failure 400 {object} object{status=string,message=string}
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id}/reject [post]
+// @Router /achievements/{id}/reject [post]
 func (s *achievementService) RejectAchievement(c *gin.Context) {
 	achID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid achievement ID format"})
 		return
 	}
-	
+
 	userIDStr := c.GetString("userID")
 	userUUID, _ := uuid.Parse(userIDStr)
-	
+
 	lecturer, err := s.lecturerRepo.FindByUserID(userUUID)
 	if err != nil || lecturer == nil {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Only authorized validators (Lecturers/Admins) can reject"})
 		return
 	}
-	
+
 	var req model.AchievementRejectRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid request body: " + err.Error()})
 		return
 	}
-	
+
 	if req.RejectionNote == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Rejection note is required"})
 		return
@@ -681,39 +687,39 @@ func (s *achievementService) RejectAchievement(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "Achievement not found"})
 		return
 	}
-	
+
 	// STATUS CHECK
-	if pgRef.Status != model.StatusSubmitted { 
+	if pgRef.Status != model.StatusSubmitted {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Achievement is not in SUBMITTED status"})
 		return
 	}
 
 	// 2. Update Status, Validator ID, dan Alasan Penolakan di PGSQL (Pointer Manual)
-	rejectReason := req.RejectionNote 
+	rejectReason := req.RejectionNote
 	pgRef.Status = model.StatusRejected
 	pgRef.VerifiedBy = &lecturer.ID
-	pgRef.RejectionNote = &rejectReason 
+	pgRef.RejectionNote = &rejectReason
 	pgRef.UpdatedAt = time.Now()
-	
+
 	if err := s.achievementRepo.UpdateReference(pgRef); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to reject achievement (PGSQL): " + err.Error()})
 		return
 	}
-	
+
 	// Response gabungan
 	mergedAch, _ := s.mergeAchievement(c.Request.Context(), pgRef)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Achievement rejected successfully", "data": mergedAch})
 }
 
 // @Summary Get Achievement History
-// @Description Endpoint placeholder untuk melihat riwayat perubahan status prestasi. 
+// @Description Endpoint placeholder untuk melihat riwayat perubahan status prestasi.
 // @Tags Achievements
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Achievement ID (UUID)"
 // @Success 501 {object} object{status=string,message=string} "Not Implemented"
-// @Router /api/v1/achievements/{id}/history [get]
+// @Router /achievements/{id}/history [get]
 func (s *achievementService) GetAchievementHistory(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"status": "info", "message": "Endpoint History Prestasi belum diimplementasikan. Membutuhkan model log/history terpisah."})
 }
@@ -731,7 +737,7 @@ func (s *achievementService) GetAchievementHistory(c *gin.Context) {
 // @Failure 403 {object} object{status=string,message=string}
 // @Failure 404 {object} object{status=string,message=string}
 // @Failure 500 {object} object{status=string,message=string}
-// @Router /api/v1/achievements/{id}/attachments [post]
+// @Router /achievements/{id}/attachments [post]
 func (s *achievementService) UploadAttachment(c *gin.Context) {
 	achID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -749,42 +755,42 @@ func (s *achievementService) UploadAttachment(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "Achievement not found"})
 		return
 	}
-	
+
 	// 2. Lakukan Ownership dan Status Check
 	student, err := s.getStudentByUserID(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Forbidden: Only students can upload: " + err.Error()})
 		return
 	}
-	
+
 	if pgRef.StudentID != student.ID {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Forbidden: Not the owner"})
 		return
 	}
-	
+
 	if pgRef.Status != model.StatusDraft && pgRef.Status != model.StatusRejected {
 		c.JSON(http.StatusForbidden, gin.H{"status": "error", "message": "Cannot upload attachment for achievement in status SUBMITTED or VERIFIED"})
 		return
 	}
-	
+
 	// 3. Ambil file dari form
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "File is required in 'file' form field"})
 		return
 	}
-	
+
 	// 4. Simpan file
 	fileUUID := uuid.New().String()
 	fileExtension := filepath.Ext(file.Filename)
-	safeFilename := fmt.Sprintf("%s-%s%s", 
-		strings.ReplaceAll(achID.String(), "-", "")[:8], 
-		fileUUID, 
+	safeFilename := fmt.Sprintf("%s-%s%s",
+		strings.ReplaceAll(achID.String(), "-", "")[:8],
+		fileUUID,
 		fileExtension)
-		
+
 	const uploadDir = "uploads/achievements"
 	dst := filepath.Join(uploadDir, safeFilename)
-	
+
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to create upload directory: " + err.Error()})
 		return
@@ -797,30 +803,30 @@ func (s *achievementService) UploadAttachment(c *gin.Context) {
 
 	// 5. Update achievement.Attachments di MongoDB
 	newAttachment := model.AttachmentMetadata{
-		FileName: file.Filename,
-		FileUrl: 	"/" + uploadDir + "/" + safeFilename, 
-		FileType: file.Header.Get("Content-Type"),
+		FileName:   file.Filename,
+		FileUrl:    "/" + uploadDir + "/" + safeFilename,
+		FileType:   file.Header.Get("Content-Type"),
 		UploadedAt: time.Now(),
 	}
-	
+
 	mongoAch, err := s.achievementRepo.FindMongoByID(c.Request.Context(), pgRef.MongoAchievementID)
 	if err != nil || mongoAch == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Data integrity error: Failed to retrieve Mongo content"})
 		return
 	}
-	
+
 	mongoAch.Attachments = append(mongoAch.Attachments, newAttachment)
-	
+
 	// UPDATE MONGODB
 	updates := map[string]interface{}{
 		"attachments": mongoAch.Attachments,
-		"updatedAt": 	time.Now(),
+		"updatedAt":   time.Now(),
 	}
-	
+
 	if err := s.achievementRepo.UpdateMongoAchievement(c.Request.Context(), pgRef.MongoAchievementID, updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Failed to record file path in database (Mongo update failed): " + err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "File uploaded successfully", "data": newAttachment})
 }

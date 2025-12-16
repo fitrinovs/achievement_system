@@ -23,7 +23,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/achievements": {
+        "/achievements": {
             "get": {
                 "description": "Mahasiswa: List achievements sendiri (read_own). Dosen/Admin: List semua (read_list). (Saat ini mengembalikan 501)",
                 "consumes": [
@@ -183,7 +183,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}": {
+        "/achievements/{id}": {
             "get": {
                 "description": "Mengambil detail prestasi berdasarkan ID.",
                 "consumes": [
@@ -441,7 +441,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}/attachments": {
+        "/achievements/{id}/attachments": {
             "post": {
                 "description": "Mahasiswa mengunggah file bukti prestasi (hanya untuk status DRAFT/REJECTED).",
                 "consumes": [
@@ -554,7 +554,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}/history": {
+        "/achievements/{id}/history": {
             "get": {
                 "description": "Endpoint placeholder untuk melihat riwayat perubahan status prestasi.",
                 "consumes": [
@@ -601,7 +601,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}/reject": {
+        "/achievements/{id}/reject": {
             "post": {
                 "description": "Dosen Wali/Admin menolak prestasi (Status SUBMITTED -\u003e REJECTED).",
                 "consumes": [
@@ -699,7 +699,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}/submit": {
+        "/achievements/{id}/submit": {
             "post": {
                 "description": "Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi SUBMITTED. File bukti wajib ada.",
                 "consumes": [
@@ -788,7 +788,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}/verify": {
+        "/achievements/{id}/verify": {
             "post": {
                 "description": "Dosen Wali/Admin menyetujui prestasi (Status SUBMITTED -\u003e VERIFIED).",
                 "consumes": [
@@ -877,7 +877,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/login": {
+        "/auth/login": {
             "post": {
                 "description": "Masuk sistem untuk mendapatkan Token JWT",
                 "consumes": [
@@ -929,7 +929,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/logout": {
+        "/auth/logout": {
             "post": {
                 "security": [
                     {
@@ -965,7 +965,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/profile": {
+        "/auth/profile": {
             "get": {
                 "security": [
                     {
@@ -1026,7 +1026,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/refresh": {
+        "/auth/refresh": {
             "post": {
                 "description": "Mendapatkan access token baru menggunakan refresh token",
                 "consumes": [
@@ -1096,7 +1096,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/lecturers": {
+        "/lecturers": {
             "get": {
                 "security": [
                     {
@@ -1175,7 +1175,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/lecturers/user/{id}": {
+        "/lecturers/user/{id}": {
             "get": {
                 "security": [
                     {
@@ -1223,7 +1223,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/lecturers/{id}": {
+        "/lecturers/{id}": {
             "get": {
                 "security": [
                     {
@@ -1375,7 +1375,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/lecturers/{id}/advisees": {
+        "/lecturers/{id}/advisees": {
             "get": {
                 "security": [
                     {
@@ -1435,7 +1435,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/reports/statistics": {
+        "/reports/statistics": {
             "get": {
                 "security": [
                     {
@@ -1465,7 +1465,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/reports/student-report": {
+        "/reports/student-report": {
             "get": {
                 "security": [
                     {
@@ -1495,7 +1495,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/students": {
+        "/students": {
             "get": {
                 "security": [
                     {
@@ -1576,7 +1576,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/students/{id}": {
+        "/students/{id}": {
             "get": {
                 "security": [
                     {
@@ -1683,7 +1683,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/students/{id}/achievements": {
+        "/students/{id}/achievements": {
             "get": {
                 "security": [
                     {
@@ -1735,7 +1735,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/students/{id}/advisor": {
+        "/students/{id}/advisor": {
             "put": {
                 "security": [
                     {
@@ -1782,7 +1782,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users": {
+        "/users": {
             "get": {
                 "security": [
                     {
@@ -1834,7 +1834,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/v1/users/{id}": {
+        "/users/{id}": {
             "get": {
                 "security": [
                     {
@@ -1908,7 +1908,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/v1/users/{id}/role": {
+        "/users/{id}/role": {
             "put": {
                 "security": [
                     {

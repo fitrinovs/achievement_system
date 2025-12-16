@@ -65,7 +65,7 @@ func NewStudentService(
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 409 {object} map[string]string
-// @Router /api/v1/students [post]
+// @Router /students [post]
 func (s *studentService) CreateStudent(c *gin.Context) {
 	var req model.StudentCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -115,7 +115,7 @@ func (s *studentService) CreateStudent(c *gin.Context) {
 // @Tags Students
 // @Security BearerAuth
 // @Success 200 {array} model.Student
-// @Router /api/v1/students [get]
+// @Router /students [get]
 func (s *studentService) GetAllStudents(c *gin.Context) {
 	students, err := s.studentRepo.FindAll()
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *studentService) GetAllStudents(c *gin.Context) {
 // @Param id path string true "Student UUID"
 // @Success 200 {object} model.Student
 // @Failure 404 {object} map[string]string
-// @Router /api/v1/students/{id} [get]
+// @Router /students/{id} [get]
 func (s *studentService) GetStudentByID(c *gin.Context) {
 	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -163,7 +163,7 @@ func (s *studentService) GetStudentByID(c *gin.Context) {
 // @Param id path string true "Student UUID"
 // @Param request body model.StudentUpdateRequest true "Student Data"
 // @Success 200 {object} model.Student
-// @Router /api/v1/students/{id} [put]
+// @Router /students/{id} [put]
 func (s *studentService) UpdateStudent(c *gin.Context) {
 	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -207,7 +207,7 @@ func (s *studentService) UpdateStudent(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Student UUID"
 // @Success 200 {object} map[string]string
-// @Router /api/v1/students/{id} [delete]
+// @Router /students/{id} [delete]
 func (s *studentService) DeleteStudent(c *gin.Context) {
 	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *studentService) DeleteStudent(c *gin.Context) {
 // @Param id path string true "Student UUID"
 // @Param request body object{advisor_id=string} true "Advisor UUID"
 // @Success 200 {object} map[string]string
-// @Router /api/v1/students/{id}/advisor [put]
+// @Router /students/{id}/advisor [put]
 func (s *studentService) AssignAdvisor(c *gin.Context) {
 	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -285,7 +285,7 @@ func (s *studentService) AssignAdvisor(c *gin.Context) {
 // @Success 200 {array} model.AchievementReference
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/v1/students/{id}/achievements [get]
+// @Router /students/{id}/achievements [get]
 func (s *studentService) GetAchievementsByStudentID(c *gin.Context) {
 	studentUUID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

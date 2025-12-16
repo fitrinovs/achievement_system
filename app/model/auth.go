@@ -24,3 +24,4 @@ type RefreshTokenResponse struct {
 type LogoutRequest struct {
 	Token string `json:"token"` 
 }
+
