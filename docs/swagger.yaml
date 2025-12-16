@@ -9,6 +9,7 @@ definitions:
       description:
         type: string
       file_proof:
+        description: File bukti, wajib diisi sebelum status PENDING
         type: string
       id:
         type: string
@@ -16,50 +17,91 @@ definitions:
         type: string
       points:
         type: integer
+      reason:
+        description: Alasan penolakan, hanya diisi jika Status = StatusRejected
+        type: string
       status:
-        $ref: '#/definitions/model.AchievementStatus'
+        allOf:
+        - $ref: '#/definitions/model.AchievementStatus'
+        description: Status Workflow
       student:
         allOf:
         - $ref: '#/definitions/model.Student'
-        description: |-
-          =========================================================================
-          PERBAIKAN DI SINI:
-          Tambahkan ";references:ID" agar GORM tidak salah sambung ke NIM (string)
-          =========================================================================
+        description: Asumsi model Student dan User sudah terdefinisikan.
       student_id:
-        description: Foreign Key ke Student
+        description: Foreign Key ke Student (Pemilik Prestasi)
         type: string
       title:
         type: string
       updated_at:
         type: string
       validator:
-        $ref: '#/definitions/model.Lecturer'
+        allOf:
+        - $ref: '#/definitions/model.Lecturer'
+        description: Asumsi model Lecturer sudah terdefinisikan.
       validator_id:
+        description: Validator (Dosen Wali/Admin)
         type: string
+    type: object
+  model.AchievementCreateRequest:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      level:
+        type: string
+      title:
+        type: string
+    required:
+    - category
+    - level
+    - title
+    type: object
+  model.AchievementRejectRequest:
+    properties:
+      reason:
+        description: Alasan penolakan wajib diisi
+        type: string
+    required:
+    - reason
     type: object
   model.AchievementStatus:
     enum:
+    - DRAFT
     - PENDING
     - APPROVED
     - REJECTED
     type: string
+    x-enum-comments:
+      StatusApproved: Status disetujui oleh Dosen Wali/Validator
+      StatusDraft: Status awal, bisa diubah/hapus oleh Mahasiswa
+      StatusPending: Status setelah di-submit, menunggu verifikasi
+      StatusRejected: Status ditolak, bisa di-update/re-submit oleh Mahasiswa
+    x-enum-descriptions:
+    - Status awal, bisa diubah/hapus oleh Mahasiswa
+    - Status setelah di-submit, menunggu verifikasi
+    - Status disetujui oleh Dosen Wali/Validator
+    - Status ditolak, bisa di-update/re-submit oleh Mahasiswa
     x-enum-varnames:
+    - StatusDraft
     - StatusPending
     - StatusApproved
     - StatusRejected
-  model.AchievementValidateRequest:
+  model.AchievementUpdateRequest:
     properties:
-      points:
-        type: integer
-      status:
-        allOf:
-        - $ref: '#/definitions/model.AchievementStatus'
-        enum:
-        - APPROVED
-        - REJECTED
+      category:
+        type: string
+      description:
+        type: string
+      level:
+        type: string
+      title:
+        type: string
     required:
-    - status
+    - category
+    - level
+    - title
     type: object
   model.Advisee:
     properties:
@@ -133,6 +175,8 @@ definitions:
     properties:
       action:
         type: string
+      created_at:
+        type: string
       description:
         type: string
       id:
@@ -140,6 +184,8 @@ definitions:
       name:
         type: string
       resource:
+        type: string
+      updated_at:
         type: string
     type: object
   model.RefreshTokenRequest:
@@ -167,6 +213,7 @@ definitions:
       name:
         type: string
       permissions:
+        description: Gunakan nama package jika Permission berada di package berbeda
         items:
           $ref: '#/definitions/model.Permission'
         type: array
@@ -308,35 +355,68 @@ info:
   version: "1.0"
 paths:
   /api/v1/achievements:
+    get:
+      consumes:
+      - application/json
+      description: 'Mahasiswa: List achievements sendiri (read_own). Dosen/Admin:
+        List semua (read_list).'
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                items:
+                  $ref: '#/definitions/model.Achievement'
+                type: array
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: List Achievements (Filtered by Role)
+      tags:
+      - Achievements
     post:
       consumes:
-      - multipart/form-data
-      description: Student uploads a new achievement with file proof
+      - application/json
+      description: Mahasiswa dapat membuat prestasi baru (status DRAFT).
       parameters:
-      - description: File Proof (PDF/JPG/PNG)
-        in: formData
-        name: file
-        required: true
-        type: file
-      - description: Achievement Title
-        in: formData
-        name: title
+      - description: Bearer token
+        in: header
+        name: Authorization
         required: true
         type: string
-      - description: Category (e.g. Lomba, Seminar)
-        in: formData
-        name: category
+      - description: Data Prestasi Baru
+        in: body
+        name: achievement
         required: true
-        type: string
-      - description: Level (Internasional, Nasional, Provinsi, Universitas)
-        in: formData
-        name: level
-        required: true
-        type: string
-      - description: Description
-        in: formData
-        name: description
-        type: string
+        schema:
+          $ref: '#/definitions/model.AchievementCreateRequest'
       produces:
       - application/json
       responses:
@@ -376,16 +456,420 @@ paths:
               status:
                 type: string
             type: object
-      security:
-      - BearerAuth: []
-      summary: Upload Achievement
+      summary: Create New Achievement
       tags:
       - Achievements
   /api/v1/achievements/{id}:
-    get:
-      description: Get specific achievement by UUID
+    delete:
+      consumes:
+      - application/json
+      description: Mahasiswa menghapus prestasi (hanya status DRAFT/REJECTED).
       parameters:
-      - description: Achievement UUID
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Delete Achievement
+      tags:
+      - Achievements
+    get:
+      consumes:
+      - application/json
+      description: Mengambil detail prestasi berdasarkan ID. Membutuhkan hak akses
+        (owner atau admin/dosen).
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/model.Achievement'
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Get Achievement Detail by ID
+      tags:
+      - Achievements
+    put:
+      consumes:
+      - application/json
+      description: Mahasiswa mengupdate data prestasi (hanya status DRAFT/REJECTED).
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Prestasi yang Diperbarui
+        in: body
+        name: achievement
+        required: true
+        schema:
+          $ref: '#/definitions/model.AchievementUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/model.Achievement'
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Update Achievement Data
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}/attachments:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Mahasiswa mengunggah file bukti prestasi (hanya untuk status DRAFT/REJECTED).
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: File bukti prestasi
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              file_path:
+                type: string
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Upload Attachment/Proof
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}/history:
+    get:
+      consumes:
+      - application/json
+      description: Endpoint placeholder untuk melihat riwayat perubahan status prestasi.
+        (Memerlukan implementasi tabel history/log terpisah)
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Get Achievement History
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Dosen Wali/Admin menolak prestasi (Status PENDING -> REJECTED).
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Alasan Penolakan
+        in: body
+        name: rejection
+        required: true
+        schema:
+          $ref: '#/definitions/model.AchievementRejectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/model.Achievement'
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Reject Achievement
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}/submit:
+    post:
+      consumes:
+      - application/json
+      description: Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi
+        PENDING. FileProof wajib ada.
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Submit Achievement for Verification
+      tags:
+      - Achievements
+  /api/v1/achievements/{id}/verify:
+    post:
+      consumes:
+      - application/json
+      description: Dosen Wali/Admin menyetujui prestasi (Status PENDING -> APPROVED).
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Achievement ID (UUID)
         in: path
         name: id
         required: true
@@ -411,58 +895,6 @@ paths:
               status:
                 type: string
             type: object
-        "404":
-          description: Not Found
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get Achievement Detail
-      tags:
-      - Achievements
-  /api/v1/achievements/{id}/validate:
-    put:
-      consumes:
-      - application/json
-      description: Lecturer approves or rejects an achievement
-      parameters:
-      - description: Achievement UUID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Validation Data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.AchievementValidateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
         "403":
           description: Forbidden
           schema:
@@ -481,49 +913,7 @@ paths:
               status:
                 type: string
             type: object
-      security:
-      - BearerAuth: []
-      summary: Validate Achievement
-      tags:
-      - Achievements
-  /api/v1/achievements/my:
-    get:
-      description: Get all achievements uploaded by logged-in student
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/model.Achievement'
-                type: array
-              status:
-                type: string
-            type: object
-        "403":
-          description: Forbidden
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get My Achievements
+      summary: Verify Achievement (Approve)
       tags:
       - Achievements
   /api/v1/auth/login:

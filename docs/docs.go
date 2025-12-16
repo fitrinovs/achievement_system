@@ -24,15 +24,10 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/api/v1/achievements": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Student uploads a new achievement with file proof",
+            "get": {
+                "description": "Mahasiswa: List achievements sendiri (read_own). Dosen/Admin: List semua (read_list).",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -40,41 +35,92 @@ const docTemplate = `{
                 "tags": [
                     "Achievements"
                 ],
-                "summary": "Upload Achievement",
+                "summary": "List Achievements (Filtered by Role)",
                 "parameters": [
                     {
-                        "type": "file",
-                        "description": "File Proof (PDF/JPG/PNG)",
-                        "name": "file",
-                        "in": "formData",
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/model.Achievement"
+                                    }
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Mahasiswa dapat membuat prestasi baru (status DRAFT).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Create New Achievement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Achievement Title",
-                        "name": "title",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category (e.g. Lomba, Seminar)",
-                        "name": "category",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Level (Internasional, Nasional, Provinsi, Universitas)",
-                        "name": "level",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Description",
-                        "name": "description",
-                        "in": "formData"
+                        "description": "Data Prestasi Baru",
+                        "name": "achievement",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AchievementCreateRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -137,21 +183,35 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/my": {
+        "/api/v1/achievements/{id}": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
+                "description": "Mengambil detail prestasi berdasarkan ID. Membutuhkan hak akses (owner atau admin/dosen).",
+                "consumes": [
+                    "application/json"
                 ],
-                "description": "Get all achievements uploaded by logged-in student",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Achievements"
                 ],
-                "summary": "Get My Achievements",
+                "summary": "Get Achievement Detail by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -159,10 +219,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.Achievement"
-                                    }
+                                    "$ref": "#/definitions/model.Achievement"
                                 },
                                 "status": {
                                     "type": "string"
@@ -184,8 +241,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -199,30 +256,42 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/api/v1/achievements/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
+            },
+            "put": {
+                "description": "Mahasiswa mengupdate data prestasi (hanya status DRAFT/REJECTED).",
+                "consumes": [
+                    "application/json"
                 ],
-                "description": "Get specific achievement by UUID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Achievements"
                 ],
-                "summary": "Get Achievement Detail",
+                "summary": "Update Achievement Data",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Achievement UUID",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Data Prestasi yang Diperbarui",
+                        "name": "achievement",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AchievementUpdateRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -254,6 +323,107 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Mahasiswa menghapus prestasi (hanya status DRAFT/REJECTED).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Delete Achievement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -271,14 +441,122 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/achievements/{id}/validate": {
-            "put": {
-                "security": [
+        "/api/v1/achievements/{id}/attachments": {
+            "post": {
+                "description": "Mahasiswa mengunggah file bukti prestasi (hanya untuk status DRAFT/REJECTED).",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Upload Attachment/Proof",
+                "parameters": [
                     {
-                        "BearerAuth": []
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "File bukti prestasi",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
-                "description": "Lecturer approves or rejects an achievement",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "file_path": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/achievements/{id}/history": {
+            "get": {
+                "description": "Endpoint placeholder untuk melihat riwayat perubahan status prestasi. (Memerlukan implementasi tabel history/log terpisah)",
                 "consumes": [
                     "application/json"
                 ],
@@ -288,23 +566,166 @@ const docTemplate = `{
                 "tags": [
                     "Achievements"
                 ],
-                "summary": "Validate Achievement",
+                "summary": "Get Achievement History",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Achievement UUID",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/achievements/{id}/reject": {
+            "post": {
+                "description": "Dosen Wali/Admin menolak prestasi (Status PENDING -\u003e REJECTED).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Reject Achievement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Validation Data",
-                        "name": "request",
+                        "description": "Alasan Penolakan",
+                        "name": "rejection",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.AchievementValidateRequest"
+                            "$ref": "#/definitions/model.AchievementRejectRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/model.Achievement"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/achievements/{id}/submit": {
+            "post": {
+                "description": "Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi PENDING. FileProof wajib ada.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Submit Achievement for Verification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -315,6 +736,95 @@ const docTemplate = `{
                             "properties": {
                                 "message": {
                                     "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/achievements/{id}/verify": {
+            "post": {
+                "description": "Dosen Wali/Admin menyetujui prestasi (Status PENDING -\u003e APPROVED).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Verify Achievement (Approve)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Achievement ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/model.Achievement"
                                 },
                                 "status": {
                                     "type": "string"
@@ -1404,6 +1914,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "file_proof": {
+                    "description": "File bukti, wajib diisi sebelum status PENDING",
                     "type": "string"
                 },
                 "id": {
@@ -1415,11 +1926,20 @@ const docTemplate = `{
                 "points": {
                     "type": "integer"
                 },
+                "reason": {
+                    "description": "Alasan penolakan, hanya diisi jika Status = StatusRejected",
+                    "type": "string"
+                },
                 "status": {
-                    "$ref": "#/definitions/model.AchievementStatus"
+                    "description": "Status Workflow",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.AchievementStatus"
+                        }
+                    ]
                 },
                 "student": {
-                    "description": "=========================================================================\nPERBAIKAN DI SINI:\nTambahkan \";references:ID\" agar GORM tidak salah sambung ke NIM (string)\n=========================================================================",
+                    "description": "Asumsi model Student dan User sudah terdefinisikan.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.Student"
@@ -1427,7 +1947,7 @@ const docTemplate = `{
                     ]
                 },
                 "student_id": {
-                    "description": "Foreign Key ke Student",
+                    "description": "Foreign Key ke Student (Pemilik Prestasi)",
                     "type": "string"
                 },
                 "title": {
@@ -1437,9 +1957,49 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "validator": {
-                    "$ref": "#/definitions/model.Lecturer"
+                    "description": "Asumsi model Lecturer sudah terdefinisikan.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Lecturer"
+                        }
+                    ]
                 },
                 "validator_id": {
+                    "description": "Validator (Dosen Wali/Admin)",
+                    "type": "string"
+                }
+            }
+        },
+        "model.AchievementCreateRequest": {
+            "type": "object",
+            "required": [
+                "category",
+                "level",
+                "title"
+            ],
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AchievementRejectRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "description": "Alasan penolakan wajib diisi",
                     "type": "string"
                 }
             }
@@ -1447,35 +2007,49 @@ const docTemplate = `{
         "model.AchievementStatus": {
             "type": "string",
             "enum": [
+                "DRAFT",
                 "PENDING",
                 "APPROVED",
                 "REJECTED"
             ],
+            "x-enum-comments": {
+                "StatusApproved": "Status disetujui oleh Dosen Wali/Validator",
+                "StatusDraft": "Status awal, bisa diubah/hapus oleh Mahasiswa",
+                "StatusPending": "Status setelah di-submit, menunggu verifikasi",
+                "StatusRejected": "Status ditolak, bisa di-update/re-submit oleh Mahasiswa"
+            },
+            "x-enum-descriptions": [
+                "Status awal, bisa diubah/hapus oleh Mahasiswa",
+                "Status setelah di-submit, menunggu verifikasi",
+                "Status disetujui oleh Dosen Wali/Validator",
+                "Status ditolak, bisa di-update/re-submit oleh Mahasiswa"
+            ],
             "x-enum-varnames": [
+                "StatusDraft",
                 "StatusPending",
                 "StatusApproved",
                 "StatusRejected"
             ]
         },
-        "model.AchievementValidateRequest": {
+        "model.AchievementUpdateRequest": {
             "type": "object",
             "required": [
-                "status"
+                "category",
+                "level",
+                "title"
             ],
             "properties": {
-                "points": {
-                    "type": "integer"
+                "category": {
+                    "type": "string"
                 },
-                "status": {
-                    "enum": [
-                        "APPROVED",
-                        "REJECTED"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.AchievementStatus"
-                        }
-                    ]
+                "description": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -1588,6 +2162,9 @@ const docTemplate = `{
                 "action": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -1598,6 +2175,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resource": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1640,6 +2220,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "permissions": {
+                    "description": "Gunakan nama package jika Permission berada di package berbeda",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Permission"
