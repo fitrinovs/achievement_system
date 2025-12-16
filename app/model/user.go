@@ -62,3 +62,10 @@ type UserUpdateRequest struct {
 	// Ubah int menjadi string
 	RoleID string `json:"role_id"`
 }
+
+// ===================================
+// TAMBAHAN: Request untuk Update Role
+// ===================================
+type UserUpdateRoleRequest struct {
+	RoleID string `json:"role_id" binding:"required"`
+}

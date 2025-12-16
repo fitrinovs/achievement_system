@@ -19,6 +19,10 @@ type UserRepository interface {
 	Update(user *model.User) error
 	Delete(id uuid.UUID) error
 	GetUserPermissions(userID uuid.UUID) ([]string, error)
+	// TAMBAHAN: FindAll
+	FindAll() ([]*model.User, error)
+	// TAMBAHAN: UpdateRole
+	UpdateRole(userID uuid.UUID, roleID uuid.UUID) error
 }
 
 // GORM Implementation
@@ -87,12 +91,44 @@ func (r *userRepositoryGORM) FindByID(id uuid.UUID) (*model.User, error) {
 	return &user, nil
 }
 
+// ===================================
+// TAMBAHAN: FindAll GORM
+// ===================================
+func (r *userRepositoryGORM) FindAll() ([]*model.User, error) {
+	var users []*model.User
+	err := r.db.Preload("Role").
+		Where("is_active = ?", true).
+		Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *userRepositoryGORM) Create(user *model.User) error {
 	return r.db.Create(user).Error
 }
 
 func (r *userRepositoryGORM) Update(user *model.User) error {
 	return r.db.Save(user).Error
+}
+
+// ===================================
+// TAMBAHAN: UpdateRole GORM
+// ===================================
+func (r *userRepositoryGORM) UpdateRole(userID uuid.UUID, roleID uuid.UUID) error {
+	// Hanya update kolom role_id
+	result := r.db.Model(&model.User{}).
+		Where("id = ?", userID).
+		Update("role_id", roleID)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("user not found or role already set")
+	}
+	return nil
 }
 
 func (r *userRepositoryGORM) Delete(id uuid.UUID) error {
@@ -116,6 +152,9 @@ func (r *userRepositoryGORM) GetUserPermissions(userID uuid.UUID) ([]string, err
 
 	return permissions, nil
 }
+
+// ============ SQL IMPLEMENTATION ============
+// ... (FindByUsername, FindByEmail, FindByID methods unchanged) ...
 
 func (r *UserRepositorySQL) FindByUsername(username string) (*model.User, error) {
 	query := `
@@ -207,6 +246,49 @@ func (r *UserRepositorySQL) FindByID(id uuid.UUID) (*model.User, error) {
 	return &user, nil
 }
 
+// ===================================
+// TAMBAHAN: FindAll SQL
+// ===================================
+func (r *UserRepositorySQL) FindAll() ([]*model.User, error) {
+	query := `
+		SELECT u.id, u.username, u.email, u.password_hash, u.full_name, 
+		       u.role_id, u.is_active, u.created_at, u.updated_at,
+		       r.id, r.name, r.description
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.is_active = true
+	`
+
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*model.User
+	for rows.Next() {
+		var user model.User
+		var role model.Role
+		// Pastikan urutan Scan sesuai dengan urutan Select di query
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.FullName,
+			&user.RoleID, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+			&role.ID, &role.Name, &role.Description,
+		)
+		if err != nil {
+			return nil, err
+		}
+		user.Role = &role
+		users = append(users, &user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (r *UserRepositorySQL) Create(user *model.User) error {
 	query := `
 		INSERT INTO users (id, username, email, password_hash, full_name, role_id, is_active)
@@ -243,6 +325,33 @@ func (r *UserRepositorySQL) Update(user *model.User) error {
 	).Scan(&user.UpdatedAt)
 
 	return err
+}
+
+// ===================================
+// TAMBAHAN: UpdateRole SQL
+// ===================================
+func (r *UserRepositorySQL) UpdateRole(userID uuid.UUID, roleID uuid.UUID) error {
+	query := `
+		UPDATE users 
+		SET role_id = $1, updated_at = NOW()
+		WHERE id = $2
+	`
+
+	result, err := r.DB.Exec(query, roleID, userID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New("user not found")
+	}
+
+	return nil
 }
 
 func (r *UserRepositorySQL) Delete(id uuid.UUID) error {

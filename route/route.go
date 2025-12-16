@@ -9,13 +9,13 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// PERBAIKAN: Tambahkan userService service.UserService di parameter ke-5
+// PERBAIKAN: Fungsi ini sudah memiliki 6 parameter Service
 func SetupRoutes(
 	r *gin.Engine,
 	authService service.AuthService,
 	studentService service.StudentService,
 	lecturerService service.LecturerService,
-	userService service.UserService, // <--- PARAMETER YANG HILANG/BELUM DITAMBAHKAN
+	userService service.UserService, // <-- UserService sudah ada
 	achievementService service.AchievementService,
 ) {
 	// Integrasi Swagger
@@ -50,9 +50,11 @@ func SetupRoutes(
 	// --- USER ROUTES --- (PROTECTED)
 	userGroup := protected.Group("/users")
 	{
+		userGroup.GET("", userService.GetAllUsers)      // TAMBAHAN: Get All Users
 		userGroup.POST("", userService.CreateUser)
 		userGroup.GET("/:id", userService.GetUserByID)
 		userGroup.PUT("/:id", userService.UpdateUser)
+		userGroup.PUT("/:id/role", userService.UpdateUserRole) // TAMBAHAN: Update User Role
 		userGroup.DELETE("/:id", userService.DeleteUser)
 	}
 
@@ -62,7 +64,6 @@ func SetupRoutes(
 		studentGroup.POST("", studentService.CreateStudent)
 		studentGroup.GET("/:id", studentService.GetStudentByID)
 		studentGroup.PUT("/:id", studentService.UpdateStudent)
-		// studentGroup.DELETE("/:id", studentService.DeleteStudent) // Jika ada
 	}
 
 	// --- LECTURER ROUTES ---

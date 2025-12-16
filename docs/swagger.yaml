@@ -279,6 +279,13 @@ definitions:
         description: Ubah int menjadi string
         type: string
     type: object
+  model.UserUpdateRoleRequest:
+    properties:
+      role_id:
+        type: string
+    required:
+    - role_id
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -909,6 +916,22 @@ paths:
       tags:
       - Students
   /api/v1/users:
+    get:
+      description: Mendapatkan daftar semua user yang aktif
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get All Users
+      tags:
+      - Users
     post:
       description: Membuat user baru (Admin/Dosen/Mahasiswa)
       parameters:
@@ -968,6 +991,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Update User
+      tags:
+      - Users
+  /api/v1/users/{id}/role:
+    put:
+      description: Mengubah peran (Role) pengguna.
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Role ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserUpdateRoleRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update User Role
       tags:
       - Users
 schemes:

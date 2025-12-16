@@ -16,6 +16,9 @@ type UserService interface {
 	GetUserByUsername(c *gin.Context) // Opsional, biasanya admin cari by ID
 	UpdateUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
+	// TAMBAHAN:
+	GetAllUsers(c *gin.Context)
+	UpdateUserRole(c *gin.Context)
 }
 
 type userService struct {
@@ -87,6 +90,32 @@ func (s *userService) CreateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"status": "success", "data": newUser})
+}
+
+// ===================================
+// TAMBAHAN: GetAllUsers godoc
+// ===================================
+// @Summary      Get All Users
+// @Description  Mendapatkan daftar semua user yang aktif
+// @Tags         Users
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200 {array} model.User
+// @Router       /api/v1/users [get]
+func (s *userService) GetAllUsers(c *gin.Context) {
+	users, err := s.userRepo.FindAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+
+	// Cek jika list kosong
+	if len(users) == 0 {
+		c.JSON(http.StatusOK, gin.H{"status": "success", "data": []model.User{}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": users})
 }
 
 // GetUserByID godoc
@@ -166,6 +195,59 @@ func (s *userService) UpdateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "User updated successfully"})
+}
+
+// ===================================
+// TAMBAHAN: UpdateUserRole godoc
+// ===================================
+// @Summary      Update User Role
+// @Description  Mengubah peran (Role) pengguna.
+// @Tags         Users
+// @Security     BearerAuth
+// @Param        id path string true "User UUID"
+// @Param        request body model.UserUpdateRoleRequest true "New Role ID"
+// @Success      200 {object} map[string]string
+// @Failure      400 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/users/{id}/role [put]
+func (s *userService) UpdateUserRole(c *gin.Context) {
+	id := c.Param("id")
+	userUUID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid user id format"})
+		return
+	}
+
+	var req model.UserUpdateRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+
+	// 1. Parse Role ID baru
+	roleUUID, err := uuid.Parse(req.RoleID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid role id format"})
+		return
+	}
+
+	// 2. Cek apakah user ada (Opsional, tapi baik untuk validasi)
+	_, err = s.userRepo.FindByID(userUUID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "user not found"})
+		return
+	}
+
+	// 3. Update Role di database
+	if err := s.userRepo.UpdateRole(userUUID, roleUUID); err != nil {
+		// Cek jika role ID tidak valid (jika database enforced FK constraint)
+		// atau error internal lainnya
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "User role updated successfully"})
 }
 
 // DeleteUser godoc
