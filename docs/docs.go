@@ -1435,6 +1435,163 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/reports/statistics": {
+            "get": {
+                "description": "Menghasilkan statistik prestasi berdasarkan role pengguna (Admin: All, Dosen Wali: Advisee, Mahasiswa: Own). Sesuai FR-011.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Generate Achievement Statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/model.AchievementStatisticsResponse"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/reports/student/{id}": {
+            "get": {
+                "description": "Mengambil detail semua prestasi (yang diverifikasi) dan total poin untuk mahasiswa tertentu (NIM atau UUID).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get Student Achievement Report by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Student ID (UUID) atau Student ID (NIM)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/model.StudentAchievementReportResponse"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/students": {
             "get": {
                 "security": [
@@ -2004,6 +2161,42 @@ const docTemplate = `{
                 }
             }
         },
+        "model.AchievementStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "by_level": {
+                    "description": "Distribusi tingkat kompetisi",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StatisticsByGroup"
+                    }
+                },
+                "by_period": {
+                    "description": "Total prestasi per periode (tahun event)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StatisticsByGroup"
+                    }
+                },
+                "by_type": {
+                    "description": "Total prestasi per tipe",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StatisticsByGroup"
+                    }
+                },
+                "top_students": {
+                    "description": "Top mahasiswa berprestasi",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TopStudentDetail"
+                    }
+                },
+                "total_achievement_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.AchievementStatus": {
             "type": "string",
             "enum": [
@@ -2228,6 +2421,18 @@ const docTemplate = `{
                 }
             }
         },
+        "model.StatisticsByGroup": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "group": {
+                    "description": "Contoh: 'competition', 'Internasional', '2025'",
+                    "type": "string"
+                }
+            }
+        },
         "model.Student": {
             "type": "object",
             "properties": {
@@ -2263,6 +2468,24 @@ const docTemplate = `{
                 }
             }
         },
+        "model.StudentAchievementReportResponse": {
+            "type": "object",
+            "properties": {
+                "achievements": {
+                    "description": "Asumsi model.Achievement sudah didefinisikan (digunakan untuk daftar prestasi)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Achievement"
+                    }
+                },
+                "student_profile": {
+                    "$ref": "#/definitions/model.StudentProfileResponse"
+                },
+                "total_points": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.StudentCreateRequest": {
             "type": "object",
             "required": [
@@ -2286,6 +2509,29 @@ const docTemplate = `{
                 }
             }
         },
+        "model.StudentProfileResponse": {
+            "type": "object",
+            "properties": {
+                "academic_year": {
+                    "description": "Field dari model.Student Anda",
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nim": {
+                    "description": "FIX: Ganti dari StudentID ke NIM",
+                    "type": "string"
+                },
+                "program_study": {
+                    "description": "Field dari model.Student Anda",
+                    "type": "string"
+                }
+            }
+        },
         "model.StudentUpdateRequest": {
             "type": "object",
             "properties": {
@@ -2294,6 +2540,21 @@ const docTemplate = `{
                 },
                 "program_study": {
                     "type": "string"
+                }
+            }
+        },
+        "model.TopStudentDetail": {
+            "type": "object",
+            "properties": {
+                "full_name": {
+                    "type": "string"
+                },
+                "nim": {
+                    "description": "FIX: Menggunakan nim untuk konsistensi dengan model Student",
+                    "type": "string"
+                },
+                "total_points": {
+                    "type": "integer"
                 }
             }
         },

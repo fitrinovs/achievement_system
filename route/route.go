@@ -9,6 +9,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// FIX: Menambahkan reportService sebagai parameter
 func SetupRoutes(
 	r *gin.Engine,
 	authService service.AuthService,
@@ -16,6 +17,7 @@ func SetupRoutes(
 	lecturerService service.LecturerService,
 	userService service.UserService,
 	achievementService service.AchievementService,
+	reportService service.ReportService, // PARAMETER BARU: ReportService
 ) {
 
 	// =========================
@@ -38,7 +40,8 @@ func SetupRoutes(
 	// AUTHENTICATED ROUTES
 	// =========================
 	protected := api.Group("")
-	protected.Use(middleware.AuthMiddleware())
+	// Middleware autentikasi
+	protected.Use(middleware.AuthMiddleware()) 
 
 	// =========================
 	// AUTH (PROTECTED)
@@ -63,7 +66,7 @@ func SetupRoutes(
 	}
 
 	// =================================================
-	// STUDENTS (SESUAI SRS & STUDENT SERVICE)
+	// STUDENTS
 	// =================================================
 	studentGroup := protected.Group("/students")
 	{
@@ -80,7 +83,7 @@ func SetupRoutes(
 	}
 
 	// =================================================
-	// LECTURERS (SESUAI SRS)
+	// LECTURERS
 	// =================================================
 	lecturerGroup := protected.Group("/lecturers")
 	{
@@ -99,37 +102,52 @@ func SetupRoutes(
 	// ACHIEVEMENTS
 	// =================================================
 	achievementGroup := protected.Group("/achievements")
-{
-	// 1. GET /api/v1/achievements (List) - Menggantikan GetMyAchievements
-	// Boleh 'read_own' (Mahasiswa) ATAU 'read_list' (Dosen/Admin)
-	achievementGroup.GET("/", middleware.CheckPermission("achievement:read_own", "achievement:read_list"), achievementService.GetAchievementsList)
+	{
+		// 1. GET /api/v1/achievements (List)
+		achievementGroup.GET("/", middleware.CheckPermission("achievement:read_own", "achievement:read_list"), achievementService.GetAchievementsList)
 
-	// 2. GET /api/v1/achievements/:id (Detail)
-	// Asumsi detail butuh permission yang sama dengan list
-	achievementGroup.GET("/:id", middleware.CheckPermission("achievement:read_own", "achievement:read_list"), achievementService.GetAchievementByID)
+		// 2. GET /api/v1/achievements/:id (Detail)
+		achievementGroup.GET("/:id", middleware.CheckPermission("achievement:read_own", "achievement:read_list"), achievementService.GetAchievementByID)
 
-	// 3. POST /api/v1/achievements (Create) - Mahasiswa
-	achievementGroup.POST("/", middleware.CheckPermission("achievement:create"), achievementService.CreateAchievement)
+		// 3. POST /api/v1/achievements (Create) - Mahasiswa
+		achievementGroup.POST("/", middleware.CheckPermission("achievement:create"), achievementService.CreateAchievement)
 
-	// 4. PUT /api/v1/achievements/:id (Update) - Mahasiswa
-	achievementGroup.PUT("/:id", middleware.CheckPermission("achievement:update"), achievementService.UpdateAchievement)
+		// 4. PUT /api/v1/achievements/:id (Update) - Mahasiswa
+		achievementGroup.PUT("/:id", middleware.CheckPermission("achievement:update"), achievementService.UpdateAchievement)
 
-	// 5. DELETE /api/v1/achievements/:id (Delete) - Mahasiswa
-	achievementGroup.DELETE("/:id", middleware.CheckPermission("achievement:delete"), achievementService.DeleteAchievement)
+		// 5. DELETE /api/v1/achievements/:id (Delete) - Mahasiswa
+		achievementGroup.DELETE("/:id", middleware.CheckPermission("achievement:delete"), achievementService.DeleteAchievement)
 
-	// 6. POST /api/v1/achievements/:id/submit - Mahasiswa
-	achievementGroup.POST("/:id/submit", middleware.CheckPermission("achievement:submit"), achievementService.SubmitAchievement)
+		// 6. POST /api/v1/achievements/:id/submit - Mahasiswa
+		achievementGroup.POST("/:id/submit", middleware.CheckPermission("achievement:submit"), achievementService.SubmitAchievement)
 
-	// 7. POST /api/v1/achievements/:id/verify - Dosen Wali/Admin (Menggantikan ValidateAchievement)
-	achievementGroup.POST("/:id/verify", middleware.CheckPermission("achievement:verify"), achievementService.VerifyAchievement)
+		// 7. POST /api/v1/achievements/:id/verify - Dosen Wali/Admin
+		achievementGroup.POST("/:id/verify", middleware.CheckPermission("achievement:verify"), achievementService.VerifyAchievement)
 
-	// 8. POST /api/v1/achievements/:id/reject - Dosen Wali/Admin
-	achievementGroup.POST("/:id/reject", middleware.CheckPermission("achievement:reject"), achievementService.RejectAchievement)
+		// 8. POST /api/v1/achievements/:id/reject - Dosen Wali/Admin
+		achievementGroup.POST("/:id/reject", middleware.CheckPermission("achievement:reject"), achievementService.RejectAchievement)
 
-	// 9. GET /api/v1/achievements/:id/history
-	achievementGroup.GET("/:id/history", middleware.CheckPermission("achievement:read_history"), achievementService.GetAchievementHistory)
-	
-	// 10. POST /api/v1/achievements/:id/attachments - Mahasiswa
-	achievementGroup.POST("/:id/attachments", middleware.CheckPermission("achievement:upload_attachment"), achievementService.UploadAttachment)
+		// 9. GET /api/v1/achievements/:id/history
+		achievementGroup.GET("/:id/history", middleware.CheckPermission("achievement:read_history"), achievementService.GetAchievementHistory)
+		
+		// 10. POST /api/v1/achievements/:id/attachments - Mahasiswa
+		achievementGroup.POST("/:id/attachments", middleware.CheckPermission("achievement:upload_attachment"), achievementService.UploadAttachment)
+	}
+
+	// =================================================
+	// 8. REPORTS & ANALYTICS
+	// =================================================
+	SetupReportRoutes(protected, reportService)
 }
+
+// Helper function untuk mendaftarkan route report di grup protected
+func SetupReportRoutes(router *gin.RouterGroup, reportService service.ReportService) {
+	reports := router.Group("/reports")
+	{
+		// GET /api/v1/reports/statistics
+		reports.GET("/statistics", reportService.GetAchievementStatistics)
+		
+		// GET /api/v1/reports/student/:id
+		reports.GET("/student/:id", reportService.GetStudentAchievementReport)
+	}
 }

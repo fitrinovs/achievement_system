@@ -90,18 +90,29 @@ func main() {
 	studentRepo := repository.NewStudentRepository(database.DB)
 	achievementRepo := repository.NewAchievementRepository(database.DB) 
 
+	// REPO BARU: ReportRepository.
+	// FIX: Menggunakan database.MongoClient (asumsi ini adalah variabel *mongo.Client yang diekspor
+	// dan diperlukan oleh NewReportRepository), bukan database.MongoDB (*mongo.Database).
+	reportRepo := repository.NewReportRepository(database.DB, database.MongoClient) 
+
 	// B. Services
 	authService := service.NewAuthService(userRepo, studentRepo, lecturerRepo)
 	
-	// StudentService membutuhkan achievementRepo
 	studentService := service.NewStudentService(studentRepo, userRepo, lecturerRepo, achievementRepo) 
 	
-	// LecturerService membutuhkan studentRepo
 	lecturerService := service.NewLecturerService(lecturerRepo, userRepo, studentRepo) 
 	
 	userService := service.NewUserService(userRepo) 
 
 	achievementService := service.NewAchievementService(achievementRepo, studentRepo, lecturerRepo)
+
+	// SERVICE BARU: ReportService
+	reportService := service.NewReportService(
+		reportRepo, 
+		studentRepo, 
+		lecturerRepo, 
+		achievementRepo,
+	)
 
 	// ========================================================
 	// 8. SETUP GIN SERVER
@@ -134,8 +145,8 @@ func main() {
 	// Root Route
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": 	     "Welcome to Student Achievement System API",
-			"version": 	     "1.0",
+			"message": 	   "Welcome to Student Achievement System API",
+			"version": 	   "1.0",
 			"documentation": "/swagger/index.html",
 		})
 	})
@@ -144,8 +155,16 @@ func main() {
 	// 9. SETUP ROUTES
 	// ========================================================
 
-	// Pastikan 5 service inti disalurkan ke route.SetupRoutes
-	route.SetupRoutes(router, authService, studentService, lecturerService, userService, achievementService)
+	// FIX: Tambahkan reportService ke SetupRoutes
+	route.SetupRoutes(
+		router, 
+		authService, 
+		studentService, 
+		lecturerService, 
+		userService, 
+		achievementService, 
+		reportService, // SERVICE BARU DITAMBAHKAN DI SINI
+	)
 
 	// Serve static files
 	router.Static("/uploads", uploadPath)
@@ -190,7 +209,7 @@ func healthCheckHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"status": 	"ok",
+		"status": 	 "ok",
 		"service": "Student Achievement System",
 		"database": gin.H{
 			"postgresql": postgresStatus,
