@@ -15,9 +15,6 @@ import (
 
 	_ "github.com/fitrinovs/achievement_system/docs"
 
-	// "github.com/swaggo/files"       <-- Komentari agar tidak error unused
-	// "github.com/swaggo/gin-swagger" <-- Komentari agar tidak error unused
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -69,7 +66,7 @@ func main() {
 		&model.User{},
 		&model.Lecturer{},
 		&model.Student{},
-		&model.Achievement{}, // <--- PENTING: Pastikan tabel achievement dibuat
+		&model.Achievement{},
 	)
 	logger.Info("✅ Database migration completed!")
 
@@ -91,14 +88,16 @@ func main() {
 	userRepo := repository.NewUserRepository(database.DB)
 	lecturerRepo := repository.NewLecturerRepository(database.DB)
 	studentRepo := repository.NewStudentRepository(database.DB)
-	achievementRepo := repository.NewAchievementRepository(database.DB) // <--- (1) INIT REPO
+	achievementRepo := repository.NewAchievementRepository(database.DB)
 
 	// B. Services
-	authService := service.NewAuthService(userRepo)
+	// PERBAIKAN: NewAuthService membutuhkan userRepo, studentRepo, dan lecturerRepo
+	authService := service.NewAuthService(userRepo, studentRepo, lecturerRepo)
 	studentService := service.NewStudentService(studentRepo, userRepo, lecturerRepo)
 	lecturerService := service.NewLecturerService(lecturerRepo, userRepo)
+	// TAMBAHAN: Inisialisasi UserService
+	userService := service.NewUserService(userRepo) 
 
-	// <--- (2) INIT SERVICE
 	achievementService := service.NewAchievementService(achievementRepo, studentRepo, lecturerRepo)
 
 	// ========================================================
@@ -132,8 +131,8 @@ func main() {
 	// Root Route
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message":       "Welcome to Student Achievement System API",
-			"version":       "1.0",
+			"message": 	     "Welcome to Student Achievement System API",
+			"version": 	     "1.0",
 			"documentation": "/swagger/index.html",
 		})
 	})
@@ -142,8 +141,8 @@ func main() {
 	// 9. SETUP ROUTES
 	// ========================================================
 
-	// <--- (3) MASUKKAN achievementService KE SINI (Parameter Terakhir)
-	route.SetupRoutes(router, authService, studentService, lecturerService, achievementService)
+	// PERBAIKAN: Tambahkan userService sebagai parameter
+	route.SetupRoutes(router, authService, studentService, lecturerService, userService, achievementService)
 
 	// Serve static files
 	router.Static("/uploads", uploadPath)
@@ -189,11 +188,11 @@ func healthCheckHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"status":  "ok",
+		"status": 	"ok",
 		"service": "Student Achievement System",
 		"database": gin.H{
 			"postgresql": postgresStatus,
-			"mongodb":    mongoStatus,
+			"mongodb": 	mongoStatus,
 		},
 	})
 }

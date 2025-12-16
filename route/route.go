@@ -9,11 +9,13 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// PERBAIKAN: Tambahkan userService service.UserService di parameter ke-5
 func SetupRoutes(
 	r *gin.Engine,
 	authService service.AuthService,
 	studentService service.StudentService,
 	lecturerService service.LecturerService,
+	userService service.UserService, // <--- PARAMETER YANG HILANG/BELUM DITAMBAHKAN
 	achievementService service.AchievementService,
 ) {
 	// Integrasi Swagger
@@ -25,8 +27,11 @@ func SetupRoutes(
 	// 1. AUTHENTICATION (Public Routes)
 	// ==========================================
 
-	// Langsung panggil nama fungsi service-nya
-	api.POST("/auth/login", authService.Login)
+	authPublicGroup := api.Group("/auth")
+	{
+		authPublicGroup.POST("/login", authService.Login)
+		authPublicGroup.POST("/refresh", authService.RefreshToken)
+	}
 
 	// ==========================================
 	// 2. PROTECTED ROUTES
@@ -35,8 +40,23 @@ func SetupRoutes(
 	protected := api.Group("/")
 	protected.Use(middleware.AuthMiddleware())
 
+	// --- AUTH PROTECTED ROUTES ---
+	authProtectedGroup := protected.Group("/auth")
+	{
+		authProtectedGroup.GET("/profile", authService.GetProfile)
+		authProtectedGroup.POST("/logout", authService.Logout)
+	}
+
+	// --- USER ROUTES --- (PROTECTED)
+	userGroup := protected.Group("/users")
+	{
+		userGroup.POST("", userService.CreateUser)
+		userGroup.GET("/:id", userService.GetUserByID)
+		userGroup.PUT("/:id", userService.UpdateUser)
+		userGroup.DELETE("/:id", userService.DeleteUser)
+	}
+
 	// --- STUDENT ROUTES ---
-	// Perbaikan: Hapus wrapper func(), langsung panggil service
 	studentGroup := protected.Group("/students")
 	{
 		studentGroup.POST("", studentService.CreateStudent)
@@ -58,11 +78,10 @@ func SetupRoutes(
 
 	achievementGroup := protected.Group("/achievements")
 	{
-		achievementGroup.POST("", achievementService.CreateAchievement)     // Upload
-		achievementGroup.GET("/my", achievementService.GetMyAchievements)   // List Punya Sendiri
-		achievementGroup.GET("/:id", achievementService.GetAchievementByID) // Detail
+		achievementGroup.POST("", achievementService.CreateAchievement)
+		achievementGroup.GET("/my", achievementService.GetMyAchievements)
+		achievementGroup.GET("/:id", achievementService.GetAchievementByID)
 
-		// Validasi (Bisa tambahkan middleware cek role dosen jika mau lebih strict)
 		achievementGroup.PUT("/:id/validate", achievementService.ValidateAchievement)
 	}
 

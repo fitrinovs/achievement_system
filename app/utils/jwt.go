@@ -5,52 +5,65 @@ import (
 	"os"
 	"time"
 
-	"github.com/fitrinovs/achievement_system/app/model" // Pastikan ini sesuai go.mod Anda
-
+	"github.com/fitrinovs/achievement_system/app/model"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Gunakan secret key dari environment variable
-var jwtSecret = []byte(getEnv("JWT_SECRET", "RahasiaNegara123!"))
+// GenerateToken membuat Access Token (short-lived: 1 jam)
+func GenerateToken(user model.User, role string, permissions []string) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "your-secret-key-change-in-production"
+	}
 
-// GenerateToken membuat token JWT baru
-// Input user menggunakan model.User yang ID-nya sudah uuid.UUID
-func GenerateToken(user model.User, roleName string, permissions []string) (string, error) {
-	// Set waktu kadaluarsa (24 jam)
-	expirationTime := time.Now().Add(24 * time.Hour)
-
-	// Buat claims
-	claims := &model.JwtCustomClaims{
-		UserID:      user.ID, // Ini sekarang tipe uuid.UUID, sudah cocok
-		Role:        roleName,
+	claims := model.JwtCustomClaims{
+		UserID:      user.ID,
+		Role:        role,
 		Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)), // 1 jam
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "sistem-prestasi-mahasiswa",
+			Subject:   user.Username,
 		},
 	}
 
-	// Create token dengan algoritma HS256
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Sign token dengan secret key
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
+	return token.SignedString([]byte(jwtSecret))
 }
 
-// ValidateToken memvalidasi token string dan mengembalikan claims jika valid
+// GenerateRefreshToken membuat Refresh Token (long-lived: 7 hari)
+func GenerateRefreshToken(user model.User, role string) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "your-secret-key-change-in-production"
+	}
+
+	claims := model.JwtCustomClaims{
+		UserID: user.ID,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)), // 7 hari
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   user.Username,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(jwtSecret))
+}
+
+// ValidateToken memvalidasi Access Token
 func ValidateToken(tokenString string) (*model.JwtCustomClaims, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "your-secret-key-change-in-production"
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &model.JwtCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Validasi algoritma signing
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return jwtSecret, nil
+		return []byte(jwtSecret), nil
 	})
 
 	if err != nil {
@@ -64,9 +77,8 @@ func ValidateToken(tokenString string) (*model.JwtCustomClaims, error) {
 	return nil, errors.New("invalid token")
 }
 
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return fallback
+// ValidateRefreshToken memvalidasi Refresh Token
+func ValidateRefreshToken(tokenString string) (*model.JwtCustomClaims, error) {
+	// Sama seperti ValidateToken, tapi khusus untuk refresh token
+	return ValidateToken(tokenString)
 }
