@@ -66,7 +66,7 @@ func main() {
 		&model.User{},
 		&model.Lecturer{},
 		&model.Student{},
-		&model.Achievement{},
+		&model.AchievementReference{},
 	)
 	logger.Info("✅ Database migration completed!")
 
@@ -88,13 +88,10 @@ func main() {
 	userRepo := repository.NewUserRepository(database.DB)
 	lecturerRepo := repository.NewLecturerRepository(database.DB)
 	studentRepo := repository.NewStudentRepository(database.DB)
-	achievementRepo := repository.NewAchievementRepository(database.DB) 
-
-	// REPO BARU: ReportRepository.
-	// FIX: Menggunakan database.MongoClient (asumsi ini adalah variabel *mongo.Client yang diekspor
-	// dan diperlukan oleh NewReportRepository), bukan database.MongoDB (*mongo.Database).
-	reportRepo := repository.NewReportRepository(database.DB, database.MongoClient) 
-
+	
+	// AchievementRepo memerlukan Gorm DB dan Mongo Database
+	achievementRepo := repository.NewAchievementRepository(database.DB, database.MongoDB)
+	
 	// B. Services
 	authService := service.NewAuthService(userRepo, studentRepo, lecturerRepo)
 	
@@ -106,12 +103,10 @@ func main() {
 
 	achievementService := service.NewAchievementService(achievementRepo, studentRepo, lecturerRepo)
 
-	// SERVICE BARU: ReportService
+	// ReportService hanya memerlukan AchievementRepo dan StudentRepo
 	reportService := service.NewReportService(
-		reportRepo, 
-		studentRepo, 
-		lecturerRepo, 
-		achievementRepo,
+		achievementRepo, 
+		studentRepo,     
 	)
 
 	// ========================================================
@@ -144,9 +139,10 @@ func main() {
 
 	// Root Route
 	router.GET("/", func(c *gin.Context) {
+		// PERBAIKAN: Baris 144 (sebelumnya)
 		c.JSON(200, gin.H{
-			"message": 	   "Welcome to Student Achievement System API",
-			"version": 	   "1.0",
+			"message": "Welcome to Student Achievement System API",
+			"version": "1.0",
 			"documentation": "/swagger/index.html",
 		})
 	})
@@ -155,7 +151,6 @@ func main() {
 	// 9. SETUP ROUTES
 	// ========================================================
 
-	// FIX: Tambahkan reportService ke SetupRoutes
 	route.SetupRoutes(
 		router, 
 		authService, 
@@ -163,7 +158,7 @@ func main() {
 		lecturerService, 
 		userService, 
 		achievementService, 
-		reportService, // SERVICE BARU DITAMBAHKAN DI SINI
+		reportService, 
 	)
 
 	// Serve static files
@@ -198,22 +193,23 @@ func corsMiddleware() gin.HandlerFunc {
 
 func healthCheckHandler(c *gin.Context) {
 	sqlDB, err := database.DB.DB()
-	postgresStatus := "connected"
-	if err != nil || sqlDB.Ping() != nil {
-		postgresStatus = "disconnected"
-	}
+	
+    postgresStatus := "connected"
+    if err != nil || sqlDB.Ping() != nil {
+        postgresStatus = "disconnected"
+    }
 
-	mongoStatus := "connected"
-	if database.MongoDB == nil {
-		mongoStatus = "disconnected"
-	}
+    mongoStatus := "connected"
+    if database.MongoDB == nil {
+        mongoStatus = "disconnected"
+    }
 
 	c.JSON(200, gin.H{
-		"status": 	 "ok",
+		"status": "ok",
 		"service": "Student Achievement System",
 		"database": gin.H{
 			"postgresql": postgresStatus,
-			"mongodb": 	mongoStatus,
+			"mongodb": mongoStatus,
 		},
 	})
 }

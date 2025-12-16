@@ -9,6 +9,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// =================================================================
+// INTERFACE
+// =================================================================
+
 type StudentService interface {
 	CreateStudent(c *gin.Context)
 	GetAllStudents(c *gin.Context)
@@ -20,11 +24,15 @@ type StudentService interface {
 	GetAchievementsByStudentID(c *gin.Context)
 }
 
+// =================================================================
+// STRUCT IMPLEMENTATION
+// =================================================================
+
 type studentService struct {
 	studentRepo     repository.StudentRepository
 	userRepo        repository.UserRepository
 	lecturerRepo    repository.LecturerRepository
-	achievementRepo repository.AchievementRepository
+	achievementRepo repository.AchievementRepository // Mengambil AchievementRepository
 }
 
 func NewStudentService(
@@ -40,6 +48,10 @@ func NewStudentService(
 		achievementRepo: achievementRepo,
 	}
 }
+
+// =================================================================
+// HANDLERS
+// =================================================================
 
 //
 // =======================
@@ -266,10 +278,13 @@ func (s *studentService) AssignAdvisor(c *gin.Context) {
 // GET STUDENT ACHIEVEMENTS
 // =======================
 // @Summary Get Achievements by Student
+// @Description Mengambil daftar referensi prestasi (PGSQL) milik mahasiswa.
 // @Tags Students
 // @Security BearerAuth
 // @Param id path string true "Student UUID"
-// @Success 200 {array} model.Achievement
+// @Success 200 {array} model.AchievementReference
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /api/v1/students/{id}/achievements [get]
 func (s *studentService) GetAchievementsByStudentID(c *gin.Context) {
 	studentUUID, err := uuid.Parse(c.Param("id"))
@@ -283,7 +298,10 @@ func (s *studentService) GetAchievementsByStudentID(c *gin.Context) {
 		return
 	}
 
-	achievements, err := s.achievementRepo.FindByStudentID(studentUUID)
+	// PERBAIKAN UTAMA: Mengganti FindByStudentID yang tidak ada
+	// dengan FindReferencesByStudentID yang kita definisikan di repository.
+	// Outputnya adalah []model.AchievementReference (data PGSQL).
+	achievements, err := s.achievementRepo.FindReferencesByStudentID(studentUUID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return

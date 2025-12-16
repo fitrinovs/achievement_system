@@ -23,7 +23,7 @@
     "paths": {
         "/api/v1/achievements": {
             "get": {
-                "description": "Mahasiswa: List achievements sendiri (read_own). Dosen/Admin: List semua (read_list).",
+                "description": "Mahasiswa: List achievements sendiri (read_own). Dosen/Admin: List semua (read_list). (Saat ini mengembalikan 501)",
                 "consumes": [
                     "application/json"
                 ],
@@ -52,7 +52,7 @@
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.Achievement"
+                                        "$ref": "#/definitions/model.AchievementDetailResponse"
                                     }
                                 },
                                 "status": {
@@ -128,7 +128,7 @@
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Achievement"
+                                    "$ref": "#/definitions/model.AchievementDetailResponse"
                                 },
                                 "status": {
                                     "type": "string"
@@ -183,7 +183,7 @@
         },
         "/api/v1/achievements/{id}": {
             "get": {
-                "description": "Mengambil detail prestasi berdasarkan ID. Membutuhkan hak akses (owner atau admin/dosen).",
+                "description": "Mengambil detail prestasi berdasarkan ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -217,7 +217,7 @@
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Achievement"
+                                    "$ref": "#/definitions/model.AchievementDetailResponse"
                                 },
                                 "status": {
                                     "type": "string"
@@ -299,7 +299,7 @@
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Achievement"
+                                    "$ref": "#/definitions/model.AchievementDetailResponse"
                                 },
                                 "status": {
                                     "type": "string"
@@ -481,8 +481,8 @@
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "file_path": {
-                                    "type": "string"
+                                "data": {
+                                    "$ref": "#/definitions/model.AttachmentMetadata"
                                 },
                                 "message": {
                                     "type": "string"
@@ -554,7 +554,7 @@
         },
         "/api/v1/achievements/{id}/history": {
             "get": {
-                "description": "Endpoint placeholder untuk melihat riwayat perubahan status prestasi. (Memerlukan implementasi tabel history/log terpisah)",
+                "description": "Endpoint placeholder untuk melihat riwayat perubahan status prestasi.",
                 "consumes": [
                     "application/json"
                 ],
@@ -601,7 +601,7 @@
         },
         "/api/v1/achievements/{id}/reject": {
             "post": {
-                "description": "Dosen Wali/Admin menolak prestasi (Status PENDING -\u003e REJECTED).",
+                "description": "Dosen Wali/Admin menolak prestasi (Status SUBMITTED -\u003e REJECTED).",
                 "consumes": [
                     "application/json"
                 ],
@@ -644,7 +644,7 @@
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Achievement"
+                                    "$ref": "#/definitions/model.AchievementDetailResponse"
                                 },
                                 "status": {
                                     "type": "string"
@@ -699,7 +699,7 @@
         },
         "/api/v1/achievements/{id}/submit": {
             "post": {
-                "description": "Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi PENDING. FileProof wajib ada.",
+                "description": "Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi SUBMITTED. File bukti wajib ada.",
                 "consumes": [
                     "application/json"
                 ],
@@ -788,7 +788,7 @@
         },
         "/api/v1/achievements/{id}/verify": {
             "post": {
-                "description": "Dosen Wali/Admin menyetujui prestasi (Status PENDING -\u003e APPROVED).",
+                "description": "Dosen Wali/Admin menyetujui prestasi (Status SUBMITTED -\u003e VERIFIED).",
                 "consumes": [
                     "application/json"
                 ],
@@ -822,7 +822,7 @@
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Achievement"
+                                    "$ref": "#/definitions/model.AchievementDetailResponse"
                                 },
                                 "status": {
                                     "type": "string"
@@ -1435,57 +1435,19 @@
         },
         "/api/v1/reports/statistics": {
             "get": {
-                "description": "Menghasilkan statistik prestasi berdasarkan role pengguna (Admin: All, Dosen Wali: Advisee, Mahasiswa: Own). Sesuai FR-011.",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Endpoint placeholder untuk menampilkan statistik prestasi global.",
                 "tags": [
                     "Reports"
                 ],
-                "summary": "Generate Achievement Statistics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
+                "summary": "Get Global Achievement Statistics",
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/model.AchievementStatisticsResponse"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "501": {
+                        "description": "Not Implemented",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1501,80 +1463,21 @@
                 }
             }
         },
-        "/api/v1/reports/student/{id}": {
+        "/api/v1/reports/student-report": {
             "get": {
-                "description": "Mengambil detail semua prestasi (yang diverifikasi) dan total poin untuk mahasiswa tertentu (NIM atau UUID).",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Endpoint placeholder untuk mendapatkan daftar laporan prestasi mahasiswa (Mungkin sama dengan GetReportByStudentID jika ID dihilangkan).",
                 "tags": [
                     "Reports"
                 ],
-                "summary": "Get Student Achievement Report by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Student ID (UUID) atau Student ID (NIM)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get Student Achievement Report (List)",
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/model.StudentAchievementReportResponse"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "501": {
+                        "description": "Not Implemented",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1785,6 +1688,7 @@
                         "BearerAuth": []
                     }
                 ],
+                "description": "Mengambil daftar referensi prestasi (PGSQL) milik mahasiswa.",
                 "tags": [
                     "Students"
                 ],
@@ -1804,7 +1708,25 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Achievement"
+                                "$ref": "#/definitions/model.AchievementReference"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -2056,33 +1978,207 @@
         }
     },
     "definitions": {
-        "model.Achievement": {
+        "model.AchievementCreateRequest": {
             "type": "object",
+            "required": [
+                "achievementType",
+                "points",
+                "title"
+            ],
             "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "created_at": {
+                "achievementType": {
                     "type": "string"
                 },
                 "description": {
                     "type": "string"
                 },
-                "file_proof": {
-                    "description": "File bukti, wajib diisi sebelum status PENDING",
+                "details": {
+                    "description": "Menggunakan struct detail",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.AchievementDetails"
+                        }
+                    ]
+                },
+                "points": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
                     "type": "string"
+                }
+            }
+        },
+        "model.AchievementDetailResponse": {
+            "type": "object",
+            "properties": {
+                "achievement_type": {
+                    "type": "string"
+                },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AttachmentMetadata"
+                    }
+                },
+                "created_at": {
+                    "description": "Timestamp",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "id": {
+                    "description": "PGSQL (Reference/Workflow Fields)",
                     "type": "string"
                 },
-                "level": {
+                "mongo_achievement_id": {
+                    "description": "MongoDB (Content Fields)",
                     "type": "string"
                 },
                 "points": {
                     "type": "integer"
                 },
-                "reason": {
-                    "description": "Alasan penolakan, hanya diisi jika Status = StatusRejected",
+                "rejection_note": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/model.AchievementStatus"
+                },
+                "student_id": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "verified_at": {
+                    "type": "string"
+                },
+                "verified_by": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AchievementDetails": {
+            "type": "object",
+            "properties": {
+                "authors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "certificationName": {
+                    "description": "Untuk certification",
+                    "type": "string"
+                },
+                "certificationNumber": {
+                    "type": "string"
+                },
+                "competitionLevel": {
+                    "type": "string"
+                },
+                "competitionName": {
+                    "description": "Untuk competition",
+                    "type": "string"
+                },
+                "customFields": {},
+                "eventDate": {
+                    "description": "Field umum yang bisa ada",
+                    "type": "string"
+                },
+                "issn": {
+                    "type": "string"
+                },
+                "issuedBy": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "medalType": {
+                    "type": "string"
+                },
+                "organizationName": {
+                    "description": "Untuk organization",
+                    "type": "string"
+                },
+                "organizer": {
+                    "type": "string"
+                },
+                "period": {
+                    "type": "object",
+                    "properties": {
+                        "end": {
+                            "type": "string"
+                        },
+                        "start": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "position": {
+                    "type": "string"
+                },
+                "publicationTitle": {
+                    "type": "string"
+                },
+                "publicationType": {
+                    "description": "Untuk publication",
+                    "type": "string"
+                },
+                "publisher": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "validUntil": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AchievementReference": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID (uuid), PRIMARY KEY",
+                    "type": "string"
+                },
+                "mongo_achievement_id": {
+                    "description": "Kunci Penghubung ke MongoDB",
+                    "type": "string"
+                },
+                "rejection_note": {
+                    "description": "Alasan penolakan",
                     "type": "string"
                 },
                 "status": {
@@ -2094,7 +2190,7 @@
                     ]
                 },
                 "student": {
-                    "description": "Asumsi model Student dan User sudah terdefinisikan.",
+                    "description": "Relasi ke Student (opsional, tergantung kebutuhan preload)",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.Student"
@@ -2105,139 +2201,68 @@
                     "description": "Foreign Key ke Student (Pemilik Prestasi)",
                     "type": "string"
                 },
-                "title": {
+                "submitted_at": {
+                    "description": "Waktu Pengajuan dan Verifikasi",
                     "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
                 },
-                "validator": {
-                    "description": "Asumsi model Lecturer sudah terdefinisikan.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.Lecturer"
-                        }
-                    ]
+                "verified_at": {
+                    "type": "string"
                 },
-                "validator_id": {
+                "verified_by": {
                     "description": "Validator (Dosen Wali/Admin)",
                     "type": "string"
-                }
-            }
-        },
-        "model.AchievementCreateRequest": {
-            "type": "object",
-            "required": [
-                "category",
-                "level",
-                "title"
-            ],
-            "properties": {
-                "category": {
-                    "type": "string"
                 },
-                "description": {
-                    "type": "string"
-                },
-                "level": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
+                "verified_by_user": {
+                    "$ref": "#/definitions/model.User"
                 }
             }
         },
         "model.AchievementRejectRequest": {
             "type": "object",
             "required": [
-                "reason"
+                "rejection_note"
             ],
             "properties": {
-                "reason": {
-                    "description": "Alasan penolakan wajib diisi",
+                "rejection_note": {
                     "type": "string"
-                }
-            }
-        },
-        "model.AchievementStatisticsResponse": {
-            "type": "object",
-            "properties": {
-                "by_level": {
-                    "description": "Distribusi tingkat kompetisi",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.StatisticsByGroup"
-                    }
-                },
-                "by_period": {
-                    "description": "Total prestasi per periode (tahun event)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.StatisticsByGroup"
-                    }
-                },
-                "by_type": {
-                    "description": "Total prestasi per tipe",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.StatisticsByGroup"
-                    }
-                },
-                "top_students": {
-                    "description": "Top mahasiswa berprestasi",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.TopStudentDetail"
-                    }
-                },
-                "total_achievement_count": {
-                    "type": "integer"
                 }
             }
         },
         "model.AchievementStatus": {
             "type": "string",
             "enum": [
-                "DRAFT",
-                "PENDING",
-                "APPROVED",
-                "REJECTED"
-            ],
-            "x-enum-comments": {
-                "StatusApproved": "Status disetujui oleh Dosen Wali/Validator",
-                "StatusDraft": "Status awal, bisa diubah/hapus oleh Mahasiswa",
-                "StatusPending": "Status setelah di-submit, menunggu verifikasi",
-                "StatusRejected": "Status ditolak, bisa di-update/re-submit oleh Mahasiswa"
-            },
-            "x-enum-descriptions": [
-                "Status awal, bisa diubah/hapus oleh Mahasiswa",
-                "Status setelah di-submit, menunggu verifikasi",
-                "Status disetujui oleh Dosen Wali/Validator",
-                "Status ditolak, bisa di-update/re-submit oleh Mahasiswa"
+                "draft",
+                "submitted",
+                "verified",
+                "rejected"
             ],
             "x-enum-varnames": [
                 "StatusDraft",
-                "StatusPending",
-                "StatusApproved",
+                "StatusSubmitted",
+                "StatusVerified",
                 "StatusRejected"
             ]
         },
         "model.AchievementUpdateRequest": {
             "type": "object",
-            "required": [
-                "category",
-                "level",
-                "title"
-            ],
             "properties": {
-                "category": {
-                    "type": "string"
-                },
                 "description": {
                     "type": "string"
                 },
-                "level": {
-                    "type": "string"
+                "details": {
+                    "$ref": "#/definitions/model.AchievementDetails"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "title": {
                     "type": "string"
@@ -2261,6 +2286,23 @@
                     "type": "string"
                 },
                 "program_study": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AttachmentMetadata": {
+            "type": "object",
+            "properties": {
+                "fileName": {
+                    "type": "string"
+                },
+                "fileType": {
+                    "type": "string"
+                },
+                "fileUrl": {
+                    "type": "string"
+                },
+                "uploadedAt": {
                     "type": "string"
                 }
             }
@@ -2419,18 +2461,6 @@
                 }
             }
         },
-        "model.StatisticsByGroup": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "group": {
-                    "description": "Contoh: 'competition', 'Internasional', '2025'",
-                    "type": "string"
-                }
-            }
-        },
         "model.Student": {
             "type": "object",
             "properties": {
@@ -2466,24 +2496,6 @@
                 }
             }
         },
-        "model.StudentAchievementReportResponse": {
-            "type": "object",
-            "properties": {
-                "achievements": {
-                    "description": "Asumsi model.Achievement sudah didefinisikan (digunakan untuk daftar prestasi)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Achievement"
-                    }
-                },
-                "student_profile": {
-                    "$ref": "#/definitions/model.StudentProfileResponse"
-                },
-                "total_points": {
-                    "type": "integer"
-                }
-            }
-        },
         "model.StudentCreateRequest": {
             "type": "object",
             "required": [
@@ -2507,29 +2519,6 @@
                 }
             }
         },
-        "model.StudentProfileResponse": {
-            "type": "object",
-            "properties": {
-                "academic_year": {
-                    "description": "Field dari model.Student Anda",
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "nim": {
-                    "description": "FIX: Ganti dari StudentID ke NIM",
-                    "type": "string"
-                },
-                "program_study": {
-                    "description": "Field dari model.Student Anda",
-                    "type": "string"
-                }
-            }
-        },
         "model.StudentUpdateRequest": {
             "type": "object",
             "properties": {
@@ -2538,21 +2527,6 @@
                 },
                 "program_study": {
                     "type": "string"
-                }
-            }
-        },
-        "model.TopStudentDetail": {
-            "type": "object",
-            "properties": {
-                "full_name": {
-                    "type": "string"
-                },
-                "nim": {
-                    "description": "FIX: Menggunakan nim untuk konsistensi dengan model Student",
-                    "type": "string"
-                },
-                "total_points": {
-                    "type": "integer"
                 }
             }
         },

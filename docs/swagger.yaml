@@ -1,24 +1,142 @@
 basePath: /api/v1
 definitions:
-  model.Achievement:
+  model.AchievementCreateRequest:
     properties:
-      category:
-        type: string
-      created_at:
+      achievementType:
         type: string
       description:
         type: string
-      file_proof:
-        description: File bukti, wajib diisi sebelum status PENDING
+      details:
+        allOf:
+        - $ref: '#/definitions/model.AchievementDetails'
+        description: Menggunakan struct detail
+      points:
+        minimum: 1
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      title:
         type: string
+    required:
+    - achievementType
+    - points
+    - title
+    type: object
+  model.AchievementDetailResponse:
+    properties:
+      achievement_type:
+        type: string
+      attachments:
+        items:
+          $ref: '#/definitions/model.AttachmentMetadata'
+        type: array
+      created_at:
+        description: Timestamp
+        type: string
+      description:
+        type: string
+      details:
+        additionalProperties: true
+        type: object
       id:
+        description: PGSQL (Reference/Workflow Fields)
         type: string
-      level:
+      mongo_achievement_id:
+        description: MongoDB (Content Fields)
         type: string
       points:
         type: integer
-      reason:
-        description: Alasan penolakan, hanya diisi jika Status = StatusRejected
+      rejection_note:
+        type: string
+      status:
+        $ref: '#/definitions/model.AchievementStatus'
+      student_id:
+        type: string
+      submitted_at:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      updated_at:
+        type: string
+      verified_at:
+        type: string
+      verified_by:
+        type: string
+    type: object
+  model.AchievementDetails:
+    properties:
+      authors:
+        items:
+          type: string
+        type: array
+      certificationName:
+        description: Untuk certification
+        type: string
+      certificationNumber:
+        type: string
+      competitionLevel:
+        type: string
+      competitionName:
+        description: Untuk competition
+        type: string
+      customFields: {}
+      eventDate:
+        description: Field umum yang bisa ada
+        type: string
+      issn:
+        type: string
+      issuedBy:
+        type: string
+      location:
+        type: string
+      medalType:
+        type: string
+      organizationName:
+        description: Untuk organization
+        type: string
+      organizer:
+        type: string
+      period:
+        properties:
+          end:
+            type: string
+          start:
+            type: string
+        type: object
+      position:
+        type: string
+      publicationTitle:
+        type: string
+      publicationType:
+        description: Untuk publication
+        type: string
+      publisher:
+        type: string
+      rank:
+        type: integer
+      score:
+        type: number
+      validUntil:
+        type: string
+    type: object
+  model.AchievementReference:
+    properties:
+      created_at:
+        type: string
+      id:
+        description: ID (uuid), PRIMARY KEY
+        type: string
+      mongo_achievement_id:
+        description: Kunci Penghubung ke MongoDB
+        type: string
+      rejection_note:
+        description: Alasan penolakan
         type: string
       status:
         allOf:
@@ -27,106 +145,56 @@ definitions:
       student:
         allOf:
         - $ref: '#/definitions/model.Student'
-        description: Asumsi model Student dan User sudah terdefinisikan.
+        description: Relasi ke Student (opsional, tergantung kebutuhan preload)
       student_id:
         description: Foreign Key ke Student (Pemilik Prestasi)
         type: string
-      title:
+      submitted_at:
+        description: Waktu Pengajuan dan Verifikasi
         type: string
       updated_at:
         type: string
-      validator:
-        allOf:
-        - $ref: '#/definitions/model.Lecturer'
-        description: Asumsi model Lecturer sudah terdefinisikan.
-      validator_id:
+      verified_at:
+        type: string
+      verified_by:
         description: Validator (Dosen Wali/Admin)
         type: string
-    type: object
-  model.AchievementCreateRequest:
-    properties:
-      category:
-        type: string
-      description:
-        type: string
-      level:
-        type: string
-      title:
-        type: string
-    required:
-    - category
-    - level
-    - title
+      verified_by_user:
+        $ref: '#/definitions/model.User'
     type: object
   model.AchievementRejectRequest:
     properties:
-      reason:
-        description: Alasan penolakan wajib diisi
+      rejection_note:
         type: string
     required:
-    - reason
-    type: object
-  model.AchievementStatisticsResponse:
-    properties:
-      by_level:
-        description: Distribusi tingkat kompetisi
-        items:
-          $ref: '#/definitions/model.StatisticsByGroup'
-        type: array
-      by_period:
-        description: Total prestasi per periode (tahun event)
-        items:
-          $ref: '#/definitions/model.StatisticsByGroup'
-        type: array
-      by_type:
-        description: Total prestasi per tipe
-        items:
-          $ref: '#/definitions/model.StatisticsByGroup'
-        type: array
-      top_students:
-        description: Top mahasiswa berprestasi
-        items:
-          $ref: '#/definitions/model.TopStudentDetail'
-        type: array
-      total_achievement_count:
-        type: integer
+    - rejection_note
     type: object
   model.AchievementStatus:
     enum:
-    - DRAFT
-    - PENDING
-    - APPROVED
-    - REJECTED
+    - draft
+    - submitted
+    - verified
+    - rejected
     type: string
-    x-enum-comments:
-      StatusApproved: Status disetujui oleh Dosen Wali/Validator
-      StatusDraft: Status awal, bisa diubah/hapus oleh Mahasiswa
-      StatusPending: Status setelah di-submit, menunggu verifikasi
-      StatusRejected: Status ditolak, bisa di-update/re-submit oleh Mahasiswa
-    x-enum-descriptions:
-    - Status awal, bisa diubah/hapus oleh Mahasiswa
-    - Status setelah di-submit, menunggu verifikasi
-    - Status disetujui oleh Dosen Wali/Validator
-    - Status ditolak, bisa di-update/re-submit oleh Mahasiswa
     x-enum-varnames:
     - StatusDraft
-    - StatusPending
-    - StatusApproved
+    - StatusSubmitted
+    - StatusVerified
     - StatusRejected
   model.AchievementUpdateRequest:
     properties:
-      category:
-        type: string
       description:
         type: string
-      level:
-        type: string
+      details:
+        $ref: '#/definitions/model.AchievementDetails'
+      points:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
       title:
         type: string
-    required:
-    - category
-    - level
-    - title
     type: object
   model.Advisee:
     properties:
@@ -140,6 +208,17 @@ definitions:
       nim:
         type: string
       program_study:
+        type: string
+    type: object
+  model.AttachmentMetadata:
+    properties:
+      fileName:
+        type: string
+      fileType:
+        type: string
+      fileUrl:
+        type: string
+      uploadedAt:
         type: string
     type: object
   model.Lecturer:
@@ -243,14 +322,6 @@ definitions:
           $ref: '#/definitions/model.Permission'
         type: array
     type: object
-  model.StatisticsByGroup:
-    properties:
-      count:
-        type: integer
-      group:
-        description: 'Contoh: ''competition'', ''Internasional'', ''2025'''
-        type: string
-    type: object
   model.Student:
     properties:
       academic_year:
@@ -274,19 +345,6 @@ definitions:
       user_id:
         type: string
     type: object
-  model.StudentAchievementReportResponse:
-    properties:
-      achievements:
-        description: Asumsi model.Achievement sudah didefinisikan (digunakan untuk
-          daftar prestasi)
-        items:
-          $ref: '#/definitions/model.Achievement'
-        type: array
-      student_profile:
-        $ref: '#/definitions/model.StudentProfileResponse'
-      total_points:
-        type: integer
-    type: object
   model.StudentCreateRequest:
     properties:
       academic_year:
@@ -303,38 +361,12 @@ definitions:
     - program_study
     - user_id
     type: object
-  model.StudentProfileResponse:
-    properties:
-      academic_year:
-        description: Field dari model.Student Anda
-        type: string
-      full_name:
-        type: string
-      id:
-        type: string
-      nim:
-        description: 'FIX: Ganti dari StudentID ke NIM'
-        type: string
-      program_study:
-        description: Field dari model.Student Anda
-        type: string
-    type: object
   model.StudentUpdateRequest:
     properties:
       academic_year:
         type: string
       program_study:
         type: string
-    type: object
-  model.TopStudentDetail:
-    properties:
-      full_name:
-        type: string
-      nim:
-        description: 'FIX: Menggunakan nim untuk konsistensi dengan model Student'
-        type: string
-      total_points:
-        type: integer
     type: object
   model.User:
     properties:
@@ -431,7 +463,7 @@ paths:
       consumes:
       - application/json
       description: 'Mahasiswa: List achievements sendiri (read_own). Dosen/Admin:
-        List semua (read_list).'
+        List semua (read_list). (Saat ini mengembalikan 501)'
       parameters:
       - description: Bearer token
         in: header
@@ -447,7 +479,7 @@ paths:
             properties:
               data:
                 items:
-                  $ref: '#/definitions/model.Achievement'
+                  $ref: '#/definitions/model.AchievementDetailResponse'
                 type: array
               status:
                 type: string
@@ -497,7 +529,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/model.Achievement'
+                $ref: '#/definitions/model.AchievementDetailResponse'
               status:
                 type: string
             type: object
@@ -583,8 +615,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Mengambil detail prestasi berdasarkan ID. Membutuhkan hak akses
-        (owner atau admin/dosen).
+      description: Mengambil detail prestasi berdasarkan ID.
       parameters:
       - description: Bearer token
         in: header
@@ -604,7 +635,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/model.Achievement'
+                $ref: '#/definitions/model.AchievementDetailResponse'
               status:
                 type: string
             type: object
@@ -658,7 +689,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/model.Achievement'
+                $ref: '#/definitions/model.AchievementDetailResponse'
               status:
                 type: string
             type: object
@@ -729,8 +760,8 @@ paths:
           description: OK
           schema:
             properties:
-              file_path:
-                type: string
+              data:
+                $ref: '#/definitions/model.AttachmentMetadata'
               message:
                 type: string
               status:
@@ -780,7 +811,6 @@ paths:
       consumes:
       - application/json
       description: Endpoint placeholder untuk melihat riwayat perubahan status prestasi.
-        (Memerlukan implementasi tabel history/log terpisah)
       parameters:
       - description: Bearer token
         in: header
@@ -811,7 +841,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Dosen Wali/Admin menolak prestasi (Status PENDING -> REJECTED).
+      description: Dosen Wali/Admin menolak prestasi (Status SUBMITTED -> REJECTED).
       parameters:
       - description: Bearer token
         in: header
@@ -837,7 +867,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/model.Achievement'
+                $ref: '#/definitions/model.AchievementDetailResponse'
               status:
                 type: string
             type: object
@@ -876,7 +906,7 @@ paths:
       consumes:
       - application/json
       description: Mahasiswa mengubah status prestasi dari DRAFT/REJECTED menjadi
-        PENDING. FileProof wajib ada.
+        SUBMITTED. File bukti wajib ada.
       parameters:
       - description: Bearer token
         in: header
@@ -934,7 +964,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Dosen Wali/Admin menyetujui prestasi (Status PENDING -> APPROVED).
+      description: Dosen Wali/Admin menyetujui prestasi (Status SUBMITTED -> VERIFIED).
       parameters:
       - description: Bearer token
         in: header
@@ -954,7 +984,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/model.Achievement'
+                $ref: '#/definitions/model.AchievementDetailResponse'
               status:
                 type: string
             type: object
@@ -1342,30 +1372,10 @@ paths:
       - Lecturers
   /api/v1/reports/statistics:
     get:
-      consumes:
-      - application/json
-      description: 'Menghasilkan statistik prestasi berdasarkan role pengguna (Admin:
-        All, Dosen Wali: Advisee, Mahasiswa: Own). Sesuai FR-011.'
-      parameters:
-      - description: Bearer token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
+      description: Endpoint placeholder untuk menampilkan statistik prestasi global.
       responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/model.AchievementStatisticsResponse'
-              status:
-                type: string
-            type: object
-        "403":
-          description: Forbidden
+        "501":
+          description: Not Implemented
           schema:
             properties:
               message:
@@ -1373,49 +1383,18 @@ paths:
               status:
                 type: string
             type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-      summary: Generate Achievement Statistics
+      security:
+      - BearerAuth: []
+      summary: Get Global Achievement Statistics
       tags:
       - Reports
-  /api/v1/reports/student/{id}:
+  /api/v1/reports/student-report:
     get:
-      consumes:
-      - application/json
-      description: Mengambil detail semua prestasi (yang diverifikasi) dan total poin
-        untuk mahasiswa tertentu (NIM atau UUID).
-      parameters:
-      - description: Bearer token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Student ID (UUID) atau Student ID (NIM)
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
+      description: Endpoint placeholder untuk mendapatkan daftar laporan prestasi
+        mahasiswa (Mungkin sama dengan GetReportByStudentID jika ID dihilangkan).
       responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/model.StudentAchievementReportResponse'
-              status:
-                type: string
-            type: object
-        "403":
-          description: Forbidden
+        "501":
+          description: Not Implemented
           schema:
             properties:
               message:
@@ -1423,25 +1402,9 @@ paths:
               status:
                 type: string
             type: object
-        "404":
-          description: Not Found
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-      summary: Get Student Achievement Report by ID
+      security:
+      - BearerAuth: []
+      summary: Get Student Achievement Report (List)
       tags:
       - Reports
   /api/v1/students:
@@ -1562,6 +1525,7 @@ paths:
       - Students
   /api/v1/students/{id}/achievements:
     get:
+      description: Mengambil daftar referensi prestasi (PGSQL) milik mahasiswa.
       parameters:
       - description: Student UUID
         in: path
@@ -1573,8 +1537,20 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Achievement'
+              $ref: '#/definitions/model.AchievementReference'
             type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Get Achievements by Student
